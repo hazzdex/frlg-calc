@@ -1,0 +1,2312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pokémon Gen 3 Kanto Stat Calculator</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for Inter font and general aesthetics */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8; /* Light blue-gray background */
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; /* Align to top for better scrolling */
+            min-height: 100vh;
+            padding: 2rem;
+            box-sizing: border-box;
+        }
+        .container {
+            background-color: #ffffff;
+            border-radius: 1.5rem; /* More rounded corners */
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            padding: 2.5rem;
+            max-width: 900px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+        .input-group label {
+            font-weight: 600;
+            color: #334155; /* Darker text for labels */
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+        .input-group input, .input-group select {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 1px solid #cbd5e1; /* Light gray border */
+            border-radius: 0.75rem; /* Rounded input fields */
+            background-color: #f8fafc; /* Very light background for inputs */
+            transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+            color: #1e293b; /* Dark text for input values */
+        }
+        .input-group input:focus, .input-group select:focus {
+            border-color: #3b82f6; /* Blue focus border */
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25); /* Light blue shadow on focus */
+        }
+        .calculate-button {
+            background-color: #4f46e5; /* Indigo button */
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 0.75rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out;
+            box-shadow: 0 4px 10px rgba(79, 70, 229, 0.3);
+            display: block;
+            width: fit-content;
+            margin: 0 auto; /* Center the button */
+        }
+        .calculate-button:hover {
+            background-color: #4338ca; /* Darker indigo on hover */
+            transform: translateY(-2px);
+        }
+        .calculate-button:active {
+            transform: translateY(0);
+        }
+        .results-section {
+            background-color: #ecfdf5; /* Light green background for results */
+            border: 1px solid #a7f3d0; /* Green border */
+            border-radius: 1rem;
+            padding: 2rem;
+        }
+        .results-section h2 {
+            color: #065f46; /* Dark green for heading */
+            margin-bottom: 1.5rem;
+            font-size: 1.75rem;
+            font-weight: 700;
+            text-align: center;
+        }
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.75rem 0;
+            border-bottom: 1px dashed #d1fae5; /* Dashed separator */
+        }
+        .stat-item:last-child {
+            border-bottom: none;
+        }
+        .stat-item span:first-child {
+            font-weight: 600;
+            color: #064e3b; /* Even darker green for stat names */
+        }
+        .stat-item span:last-child {
+            font-weight: 700;
+            color: #047857; /* Vibrant green for stat values */
+        }
+        .error-message {
+            color: #ef4444; /* Red for error messages */
+            background-color: #fee2e2; /* Light red background */
+            border: 1px solid #fca5a5; /* Red border */
+            padding: 0.75rem 1rem;
+            border-radius: 0.75rem;
+            margin-top: 1rem;
+            text-align: center;
+            font-weight: 500;
+            display: none; /* Hidden by default */
+        }
+        .flex-wrap-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.5rem; /* Gap between input groups */
+        }
+        .flex-wrap-container > div {
+            flex: 1 1 calc(50% - 0.75rem); /* Two columns on larger screens */
+            min-width: 250px; /* Minimum width before wrapping */
+        }
+        .tabs {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 1.5rem;
+            gap: 1rem;
+        }
+        .tab-button {
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem;
+            background-color: #e0e7ff; /* Light indigo */
+            color: #4f46e5; /* Indigo text */
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
+        }
+        .tab-button.active {
+            background-color: #4f46e5; /* Active indigo */
+            color: white;
+            box-shadow: 0 4px 10px rgba(79, 70, 229, 0.3);
+        }
+        .tab-button:hover:not(.active) {
+            background-color: #c7d2fe;
+        }
+
+        .ev-pokemon-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 1rem;
+            margin-top: 1.5rem;
+            max-height: 400px; /* Limit height for scrolling */
+            overflow-y: auto; /* Enable vertical scrolling */
+            padding-right: 0.5rem; /* Space for scrollbar */
+        }
+
+        .ev-pokemon-item {
+            background-color: #f0f9ff; /* Very light blue */
+            border: 1px solid #bfdbfe; /* Light blue border */
+            border-radius: 0.75rem;
+            padding: 0.75rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center; /* Center content horizontally */
+            text-align: center;
+            cursor: pointer;
+            transition: transform 0.1s ease-in-out, box-shadow 0.1s ease-in-out;
+        }
+        .ev-pokemon-item:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+        }
+        .ev-pokemon-item:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        .ev-pokemon-item img {
+            width: 60px; /* Sprite size */
+            height: 60px;
+            margin-bottom: 0.5rem; /* Space between sprite and name */
+            border-radius: 0.5rem; /* Slightly rounded sprites */
+            background-color: #e2e8f0; /* Light background for placeholder */
+            image-rendering: pixelated; /* For crisp pixel art sprites */
+        }
+        .ev-pokemon-item strong {
+            font-weight: 700;
+            color: #1e40af; /* Darker blue for name */
+            margin-bottom: 0.25rem;
+            text-align: center; /* Ensure name is centered */
+        }
+        .ev-pokemon-item span {
+            font-size: 0.875rem;
+            color: #4b5563; /* Gray text for EV yield */
+            text-align: center; /* Ensure EV text is centered */
+        }
+        .ev-tally-section {
+            background-color: #ecfdf5;
+            border: 1px solid #a7f3d0;
+            border-radius: 1rem;
+            padding: 2rem;
+            margin-top: 1.5rem;
+        }
+        .ev-tally-section h2 {
+            color: #065f46;
+            margin-bottom: 1.5rem;
+            font-size: 1.75rem;
+            font-weight: 700;
+            text-align: center;
+        }
+        .ev-tally-section .stat-item {
+            display: flex; /* Ensure flex for centering values */
+            justify-content: space-between;
+            padding: 0.75rem 0;
+            border-bottom: 1px dashed #d1fae5;
+        }
+        .ev-tally-section .stat-item:last-child {
+            border-bottom: none;
+        }
+        .ev-tally-section .stat-item span:last-child {
+            color: #047857;
+        }
+
+        /* Styles for radio button groups */
+        .radio-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            justify-content: center;
+        }
+        .radio-group label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            font-weight: 500;
+            color: #334155;
+        }
+        .radio-group input[type="radio"] {
+            margin-right: 0.5rem;
+            appearance: none;
+            width: 1.25rem;
+            height: 1.25rem;
+            border: 2px solid #94a3b8;
+            border-radius: 50%;
+            display: grid;
+            place-content: center;
+            transition: all 0.2s ease-in-out;
+        }
+        .radio-group input[type="radio"]::before {
+            content: '';
+            width: 0.75rem;
+            height: 0.75rem;
+            border-radius: 50%;
+            transform: scale(0);
+            transition: transform 0.2s ease-in-out;
+            box-shadow: inset 1em 1em #4f46e5; /* Fill color */
+        }
+        .radio-group input[type="radio"]:checked::before {
+            transform: scale(1);
+        }
+        .radio-group input[type="radio"]:checked {
+            border-color: #4f46e5;
+        }
+        .radio-group input[type="radio"]:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* Styles for EV Tracker specific buttons */
+        .ev-tracker-actions {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+        .ev-tracker-actions .button {
+            background-color: #6366f1; /* Medium indigo */
+            color: white;
+            padding: 0.75rem 1.25rem;
+            border-radius: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out;
+            box-shadow: 0 2px 5px rgba(99, 102, 241, 0.3);
+        }
+        .ev-tracker-actions .button:hover {
+            background-color: #4f46e5;
+            transform: translateY(-1px);
+        }
+        .ev-tracker-actions .button:active {
+            transform: translateY(0);
+        }
+
+        /* Styles for tracked party items (new) */
+        .tracked-party-item {
+            border: 2px solid transparent; /* Default border */
+            cursor: pointer;
+            padding: 0.5rem; /* Adjust padding for visual tabs */
+            border-radius: 0.75rem;
+            background-color: #e0e7ff; /* Light indigo background */
+            transition: all 0.2s ease-in-out;
+            min-width: 80px; /* Ensure some minimum width */
+            position: relative; /* For positioning the change button */
+        }
+        .tracked-party-item.active-tracked-pokemon {
+            border-color: #4f46e5; /* Highlight color for active Pokémon */
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.4); /* Glow effect */
+            background-color: #4f46e5; /* Active background */
+            color: white; /* Active text color */
+        }
+        .tracked-party-item.active-tracked-pokemon strong {
+            color: white; /* Ensure name is white when active */
+        }
+        .tracked-party-item img {
+            filter: grayscale(0%); /* Ensure colors for placeholder if active */
+        }
+        .tracked-party-item.active-tracked-pokemon img {
+            filter: grayscale(0%); /* Ensure colors for placeholder if active */
+        }
+
+        .change-pokemon-button {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background-color: rgba(0, 0, 0, 0.3);
+            color: white;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 0.75rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.2s ease-in-out;
+        }
+        .change-pokemon-button:hover {
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        /* Modal styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(5px); /* Frosted glass effect */
+        }
+
+        .modal-content {
+            background-color: #ffffff;
+            border-radius: 1.5rem;
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
+            padding: 2rem;
+            max-width: 800px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+            animation: fadeInScale 0.3s ease-out forwards;
+        }
+
+        @keyframes fadeInScale {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .modal-close-button {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #64748b;
+            transition: color 0.2s ease-in-out;
+        }
+        .modal-close-button:hover {
+            color: #1e293b;
+        }
+
+        .modal-pokemon-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 1rem;
+            padding-top: 1rem;
+        }
+
+        .modal-pokemon-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            padding: 0.5rem;
+            border-radius: 0.75rem;
+            cursor: pointer;
+            transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out;
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+        }
+        .modal-pokemon-item:hover {
+            background-color: #e0e7ff;
+            transform: translateY(-2px);
+        }
+        .modal-pokemon-item img {
+            width: 50px;
+            height: 50px;
+            image-rendering: pixelated;
+            margin-bottom: 0.25rem;
+        }
+        .modal-pokemon-item span {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #334155;
+        }
+
+        /* Confirmation Modal Specific Styles */
+        .confirm-modal-content {
+            text-align: center;
+        }
+        .confirm-modal-content p {
+            margin-bottom: 1.5rem;
+            font-size: 1.125rem;
+            color: #334155;
+        }
+        .confirm-modal-actions {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+        }
+        .confirm-modal-actions button {
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out;
+        }
+        .confirm-modal-actions .confirm-yes {
+            background-color: #ef4444; /* Red for destructive action */
+            color: white;
+            box-shadow: 0 2px 5px rgba(239, 68, 68, 0.3);
+        }
+        .confirm-modal-actions .confirm-yes:hover {
+            background-color: #dc2626;
+            transform: translateY(-1px);
+        }
+        .confirm-modal-actions .confirm-no {
+            background-color: #e2e8f0; /* Light gray for cancel */
+            color: #475569;
+            box-shadow: 0 2px 5px rgba(100, 116, 139, 0.2);
+        }
+        .confirm-modal-actions .confirm-no:hover {
+            background-color: #cbd5e1;
+            transform: translateY(-1px);
+        }
+
+
+        @media (max-width: 768px) {
+            .flex-wrap-container > div {
+                flex: 1 1 100%; /* Single column on smaller screens */
+            }
+            .container {
+                padding: 1.5rem;
+            }
+            .results-section, .ev-tally-section {
+                padding: 1.5rem;
+            }
+            .results-section h2, .ev-tally-section h2 {
+                font-size: 1.5rem;
+            }
+            .tabs {
+                flex-direction: column;
+                align-items: center;
+            }
+            .tab-button {
+                width: 100%;
+                text-align: center;
+            }
+            .ev-tracker-actions {
+                flex-direction: column;
+                align-items: center;
+            }
+            .ev-tracker-actions .button {
+                width: 100%;
+            }
+            #trackedPokemonPartyDisplay {
+                flex-direction: column; /* Stack party items vertically on small screens */
+            }
+            .tracked-party-item {
+                width: 100%; /* Full width for stacked items */
+            }
+            .modal-content {
+                padding: 1.5rem;
+            }
+            .modal-pokemon-grid {
+                grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-4xl font-extrabold text-center text-gray-800 mb-6">Pokémon Gen 3 Kanto Calculator</h1>
+
+        <div class="tabs">
+            <button class="tab-button active" data-tab="stat-calculator">Stat Calculator</button>
+            <button class="tab-button" data-tab="iv-estimator">IV Estimator</button>
+            <button class="tab-button" data-tab="ev-tracker">EV Tracker</button>
+        </div>
+
+        <!-- Global Party Display and Clear Button -->
+        <div class="input-section">
+            <h2 class="text-2xl font-bold text-gray-700 mb-4 text-center">Your Pokémon Party</h2>
+            <p class="text-sm text-gray-600 mb-4 text-center">Click on a Pokémon slot to select it. Click the "Change" button on a slot to assign a Pokémon.</p>
+            <!-- Tracked Pokémon Party Display -->
+            <div id="trackedPokemonPartyDisplay" class="flex flex-wrap justify-center gap-4 mb-6">
+                <!-- Tracked Pokémon items will be populated by JavaScript -->
+            </div>
+
+            <!-- Clear Party Button - Moved Here -->
+            <button id="clearPartyBtn" class="calculate-button mb-6">Clear Party</button>
+        </div>
+
+        <!-- Stat Calculator Section -->
+        <div id="stat-calculator" class="tab-content">
+            <div class="input-section">
+                <div class="flex-wrap-container mb-6">
+                    <!-- Level Input -->
+                    <div class="input-group">
+                        <label for="level" class="block text-sm">Level (1-100):</label>
+                        <input type="number" id="level" value="50" min="1" max="100" class="mt-1 block w-full">
+                    </div>
+                    <!-- Nature Selection -->
+                    <div class="input-group">
+                        <label for="natureSelect" class="block text-sm">Nature:</label>
+                        <select id="natureSelect" class="mt-1 block w-full">
+                            <!-- Options will be populated by JavaScript -->
+                        </select>
+                    </div>
+                </div>
+
+                <h2 class="text-2xl font-bold text-gray-700 mb-4 text-center">Individual Values (IVs)</h2>
+                <!-- IV Source Selection -->
+                <div class="radio-group mb-4">
+                    <label>
+                        <input type="radio" name="ivSource" value="manual" checked> Manual
+                    </label>
+                    <label>
+                        <input type="radio" name="ivSource" value="estimated" id="radioUseEstimatedIvs"> Use Estimated IVs
+                    </label>
+                </div>
+                <div class="flex-wrap-container mb-6" id="ivInputsContainer">
+                    <!-- IV Inputs -->
+                    <div class="input-group">
+                        <label for="ivHp" class="block text-sm">HP IV (0-31):</label>
+                        <input type="number" id="ivHp" value="31" min="0" max="31" class="mt-1 block w-full">
+                    </div>
+                    <div class="input-group">
+                        <label for="ivAtk" class="block text-sm">Attack IV (0-31):</label>
+                        <input type="number" id="ivAtk" value="31" min="0" max="31" class="mt-1 block w-full">
+                    </div>
+                    <div class="input-group">
+                        <label for="ivDef" class="block text-sm">Defense IV (0-31):</label>
+                        <input type="number" id="ivDef" value="31" min="0" max="31" class="mt-1 block w-full">
+                    </div>
+                    <div class="input-group">
+                        <label for="ivSpAtk" class="block text-sm">Special Attack IV (0-31):</label>
+                        <input type="number" id="ivSpAtk" value="31" min="0" max="31" class="mt-1 block w-full">
+                    </div>
+                    <div class="input-group">
+                        <label for="ivSpDef" class="block text-sm">Special Defense IV (0-31):</label>
+                        <input type="number" id="ivSpDef" value="31" min="0" max="31" class="mt-1 block w-full">
+                    </div>
+                    <div class="input-group">
+                        <label for="ivSpe" class="block text-sm">Speed IV (0-31):</label>
+                        <input type="number" id="ivSpe" value="31" min="0" max="31" class="mt-1 block w-full">
+                    </div>
+                </div>
+
+                <h2 class="text-2xl font-bold text-gray-700 mb-4 text-center">Effort Values (EVs)</h2>
+                <!-- EV Source Selection -->
+                <div class="radio-group mb-4">
+                    <label>
+                        <input type="radio" name="evSource" value="manual" checked> Manual
+                    </label>
+                    <label>
+                        <input type="radio" name="evSource" value="tracked" id="radioUseTrackedEvs"> Use Tracked EVs
+                    </label>
+                </div>
+                <div class="flex-wrap-container mb-6" id="evInputsContainer">
+                    <!-- EV Inputs -->
+                    <div class="input-group">
+                        <label for="evHp" class="block text-sm">HP EV (0-255):</label>
+                        <input type="number" id="evHp" value="0" min="0" max="255" class="mt-1 block w-full">
+                    </div>
+                    <div class="input-group">
+                        <label for="evAtk" class="block text-sm">Attack EV (0-255):</label>
+                        <input type="number" id="evAtk" value="0" min="0" max="255" class="mt-1 block w-full">
+                    </div>
+                    <div class="input-group">
+                        <label for="evDef" class="block text-sm">Defense EV (0-255):</label>
+                        <input type="number" id="evDef" value="0" min="0" max="255" class="mt-1 block w-full">
+                    </div>
+                    <div class="input-group">
+                        <label for="evSpAtk" class="block text-sm">Special Attack EV (0-255):</label>
+                        <input type="number" id="evSpAtk" value="0" min="0" max="255" class="mt-1 block w-full">
+                    </div>
+                    <div class="input-group">
+                        <label for="evSpDef" class="block text-sm">Special Defense EV (0-255):</label>
+                        <input type="number" id="evSpDef" value="0" min="0" max="255" class="mt-1 block w-full">
+                    </div>
+                    <div class="input-group">
+                        <label for="evSpe" class="block text-sm">Speed EV (0-255):</label>
+                        <input type="number" id="evSpe" value="0" min="0" max="255" class="mt-1 block w-full">
+                    </div>
+                </div>
+
+                <!-- Error Message Display -->
+                <div id="statCalculatorErrorMessage" class="error-message"></div>
+
+                <!-- Calculate Button -->
+                <button id="calculateBtn" class="calculate-button">Calculate Stats</button>
+            </div>
+
+            <!-- Results Section -->
+            <div id="results" class="results-section mt-8 hidden">
+                <h2>Calculated Stats</h2>
+                <div class="stat-item">
+                    <span>HP:</span> <span id="displayHp"></span>
+                </div>
+                <div class="stat-item">
+                    <span>Attack:</span> <span id="displayAtk"></span>
+                </div>
+                <div class="stat-item">
+                    <span>Defense:</span> <span id="displayDef"></span>
+                </div>
+                <div class="stat-item">
+                    <span>Special Attack:</span> <span id="displaySpAtk"></span>
+                </div>
+                <div class="stat-item">
+                    <span>Special Defense:</span> <span id="displaySpDef"></span>
+                </div>
+                <div class="stat-item">
+                    <span>Speed:</span> <span id="displaySpe"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- IV Estimator Section -->
+        <div id="iv-estimator" class="tab-content hidden">
+            <div class="input-section">
+                <div class="flex-wrap-container mb-6">
+                    <!-- Level Input for IV Estimator -->
+                    <div class="input-group">
+                        <label for="ivCalcLevel" class="block text-sm">Level (1-100):</label>
+                        <input type="number" id="ivCalcLevel" value="50" min="1" max="100" class="mt-1 block w-full">
+                    </div>
+                    <!-- Nature Selection for IV Estimator -->
+                    <div class="input-group">
+                        <label for="ivCalcNatureSelect" class="block text-sm">Nature:</label>
+                        <select id="ivCalcNatureSelect" class="mt-1 block w-full">
+                            <!-- Options will be populated by JavaScript -->
+                        </select>
+                    </div>
+                </div>
+
+                <h2 class="text-2xl font-bold text-gray-700 mb-4 text-center">Current Stats</h2>
+                <div class="flex-wrap-container mb-6">
+                    <!-- Actual Stat Inputs for IV Estimator -->
+                    <div class="input-group">
+                        <label for="ivCalcHp" class="block text-sm">HP:</label>
+                        <input type="number" id="ivCalcHp" value="" min="1" class="mt-1 block w-full">
+                    </div>
+                    <div class="input-group">
+                        <label for="ivCalcAtk" class="block text-sm">Attack:</label>
+                        <input type="number" id="ivCalcAtk" value="" min="1" class="mt-1 block w-full">
+                    </div>
+                    <div class="input-group">
+                        <label for="ivCalcDef" class="block text-sm">Defense:</label>
+                        <input type="number" id="ivCalcDef" value="" min="1" class="mt-1 block w-full">
+                    </div>
+                    <div class="input-group">
+                        <label for="ivCalcSpAtk" class="block text-sm">Special Attack:</label>
+                        <input type="number" id="ivCalcSpAtk" value="" min="1" class="mt-1 block w-full">
+                    </div>
+                    <div class="input-group">
+                        <label for="ivCalcSpDef" class="block text-sm">Special Defense:</label>
+                        <input type="number" id="ivCalcSpDef" value="" min="1" class="mt-1 block w-full">
+                    </div>
+                    <div class="input-group">
+                        <label for="ivCalcSpe" class="block text-sm">Speed:</label>
+                        <input type="number" id="ivCalcSpe" value="" min="1" class="mt-1 block w-full">
+                    </div>
+                </div>
+
+                <h2 class="text-2xl font-bold text-gray-700 mb-4 text-center">Known Effort Values (Optional)</h2>
+                <p class="text-sm text-gray-600 mb-4 text-center">Enter EVs if you know them for a more precise IV estimate. Otherwise, 0 EVs will be assumed.</p>
+                <div class="flex-wrap-container mb-6">
+                    <!-- Optional EV Inputs for IV Estimator -->
+                    <div class="input-group">
+                        <label for="ivCalcEvHp" class="block text-sm">HP EV (0-255):</label>
+                        <input type="number" id="ivCalcEvHp" value="0" min="0" max="255" class="mt-1 block w-full">
+                    </div>
+                    <div class="input-group">
+                        <label for="ivCalcEvAtk" class="block text-sm">Attack EV (0-255):</label>
+                        <input type="number" id="ivCalcEvAtk" value="0" min="0" max="255" class="mt-1 block w-full">
+                    </div>
+                    <div class="input-group">
+                        <label for="ivCalcEvDef" class="block text-sm">Defense EV (0-255):</label>
+                        <input type="number" id="ivCalcEvDef" value="0" min="0" max="255" class="mt-1 block w-full">
+                    </div>
+                    <div class="input-group">
+                        <label for="ivCalcEvSpAtk" class="block text-sm">Special Attack EV (0-255):</label>
+                        <input type="number" id="ivCalcEvSpAtk" value="0" min="0" max="255" class="mt-1 block w-full">
+                    </div>
+                    <div class="input-group">
+                        <label for="ivCalcEvSpDef" class="block text-sm">Special Defense EV (0-255):</label>
+                        <input type="number" id="ivCalcEvSpDef" value="0" min="0" max="255" class="mt-1 block w-full">
+                    </div>
+                    <div class="input-group">
+                        <label for="ivCalcEvSpe" class="block text-sm">Speed EV (0-255):</label>
+                        <input type="number" id="ivCalcEvSpe" value="0" min="0" max="255" class="mt-1 block w-full">
+                    </div>
+                </div>
+
+                <!-- Error Message Display for IV Estimator -->
+                <div id="ivEstimatorErrorMessage" class="error-message"></div>
+
+                <!-- Calculate IVs Button -->
+                <button id="calculateIvBtn" class="calculate-button">Estimate IVs</button>
+            </div>
+
+            <!-- IV Results Section -->
+            <div id="ivResults" class="results-section mt-8 hidden">
+                <h2>Estimated IVs</h2>
+                <div class="stat-item">
+                    <span>HP IV:</span> <span id="displayIvHp"></span>
+                </div>
+                <div class="stat-item">
+                    <span>Attack IV:</span> <span id="displayIvAtk"></span>
+                </div>
+                <div class="stat-item">
+                    <span>Defense IV:</span> <span id="displayIvDef"></span>
+                </div>
+                <div class="stat-item">
+                    <span>Special Attack IV:</span> <span id="displayIvSpAtk"></span>
+                </div>
+                <div class="stat-item">
+                    <span>Special Defense IV:</span> <span id="displayIvSpDef"></span>
+                </div>
+                <div class="stat-item">
+                    <span>Speed IV:</span> <span id="displayIvSpe"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- EV Tracker Section -->
+        <div id="ev-tracker" class="tab-content hidden">
+            <div class="input-section">
+                <h2 class="text-2xl font-bold text-gray-700 mb-4 text-center">Defeat Pokémon to gain EVs</h2>
+                <p class="text-sm text-gray-600 mb-4 text-center">Click on a Pokémon to add its EV yield to your current tally.</p>
+
+                <!-- EV Pokémon Grid -->
+                <div id="evPokemonGrid" class="ev-pokemon-grid">
+                    <!-- Pokémon items will be populated by JavaScript -->
+                </div>
+
+                <!-- Error Message Display for EV Tracker -->
+                <div id="evTrackerErrorMessage" class="error-message"></div>
+
+                <div class="ev-tracker-actions">
+                    <button id="resetEvsBtn" class="button">Reset EVs for Selected Pokémon</button>
+                </div>
+            </div>
+
+            <!-- Current EV Tally Section -->
+            <div id="currentEvTally" class="ev-tally-section mt-8">
+                <h2>Current EV Tally (<span id="trackedPokemonNameDisplay">None Selected</span>)</h2>
+                <div class="stat-item">
+                    <span>HP EVs:</span> <span id="currentEvHp">0</span>
+                </div>
+                <div class="stat-item">
+                    <span>Attack EVs:</span> <span id="currentEvAtk">0</span>
+                </div>
+                <div class="stat-item">
+                    <span>Defense EVs:</span> <span id="currentEvDef">0</span>
+                </div>
+                <div class="stat-item">
+                    <span>Special Attack EVs:</span> <span id="currentEvSpAtk">0</span>
+                </div>
+                <div class="stat-item">
+                    <span>Special Defense EVs:</span> <span id="currentEvSpDef">0</span>
+                </div>
+                <div class="stat-item">
+                    <span>Speed EVs:</span> <span id="currentEvSpe">0</span>
+                </div>
+                <div class="stat-item mt-4 pt-4 border-t-2 border-gray-200">
+                    <span class="text-lg font-bold">Total EVs:</span> <span id="totalEvs" class="text-lg font-bold">0 / 510</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pokémon Selection Modal -->
+    <div id="pokemonSelectionModal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <button class="modal-close-button" id="closeModalBtn">&times;</button>
+            <h2 class="text-2xl font-bold text-gray-700 mb-4 text-center">Select a Pokémon</h2>
+            <div id="modalPokemonGrid" class="modal-pokemon-grid">
+                <!-- Pokémon options will be populated here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Generic Confirmation Modal -->
+    <div id="confirmationModal" class="modal-overlay hidden">
+        <div class="modal-content confirm-modal-content">
+            <h2 class="text-2xl font-bold text-gray-700 mb-4 text-center" id="confirmModalTitle">Confirm Action</h2>
+            <p id="confirmModalMessage">Are you sure you want to proceed?</p>
+            <div class="confirm-modal-actions">
+                <button class="confirm-yes" id="confirmYesBtn">Yes</button>
+                <button class="confirm-no" id="confirmNoBtn">No</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Data for Kanto Pokémon (Generation 3 base stats and EV yields)
+        const KANTO_POKEMON = [
+            { name: "Bulbasaur", baseStats: { hp: 45, atk: 49, def: 49, spatk: 65, spdef: 65, spe: 45 }, evYield: { spatk: 1 } },
+            { name: "Ivysaur", baseStats: { hp: 60, atk: 62, def: 63, spatk: 80, spdef: 80, spe: 60 }, evYield: { spatk: 1, spdef: 1 } },
+            { name: "Venusaur", baseStats: { hp: 80, atk: 82, def: 83, spatk: 100, spdef: 100, spe: 80 }, evYield: { spatk: 2, spdef: 1 } },
+            { name: "Charmander", baseStats: { hp: 39, atk: 52, def: 43, spatk: 60, spdef: 50, spe: 65 }, evYield: { spe: 1 } },
+            { name: "Charmeleon", baseStats: { hp: 58, atk: 64, def: 58, spatk: 80, spdef: 65, spe: 80 }, evYield: { spatk: 1, spe: 1 } },
+            { name: "Charizard", baseStats: { hp: 78, atk: 84, def: 78, spatk: 109, spdef: 85, spe: 100 }, evYield: { spatk: 3 } },
+            { name: "Squirtle", baseStats: { hp: 44, atk: 48, def: 65, spatk: 50, spdef: 64, spe: 43 }, evYield: { def: 1 } },
+            { name: "Wartortle", baseStats: { hp: 59, atk: 63, def: 80, spatk: 65, spdef: 80, spe: 58 }, evYield: { def: 1, spdef: 1 } },
+            { name: "Blastoise", baseStats: { hp: 79, atk: 83, def: 100, spatk: 85, spdef: 105, spe: 78 }, evYield: { spdef: 3 } },
+            { name: "Caterpie", baseStats: { hp: 45, atk: 30, def: 35, spatk: 20, spdef: 20, spe: 45 }, evYield: { hp: 1 } },
+            { name: "Metapod", baseStats: { hp: 50, atk: 20, def: 55, spatk: 25, spdef: 25, spe: 30 }, evYield: { def: 2 } },
+            { name: "Butterfree", baseStats: { hp: 60, atk: 45, def: 50, spatk: 80, spdef: 80, spe: 70 }, evYield: { spatk: 2, spdef: 1 } },
+            { name: "Weedle", baseStats: { hp: 40, atk: 35, def: 30, spatk: 20, spdef: 20, spe: 50 }, evYield: { spe: 1 } },
+            { name: "Kakuna", baseStats: { hp: 45, atk: 25, def: 50, spatk: 25, spdef: 25, spe: 35 }, evYield: { def: 2 } },
+            { name: "Beedrill", baseStats: { hp: 65, atk: 90, def: 40, spatk: 45, spdef: 80, spe: 75 }, evYield: { atk: 2, spdef: 1 } },
+            { name: "Pidgey", baseStats: { hp: 40, atk: 45, def: 40, spatk: 35, spdef: 35, spe: 56 }, evYield: { spe: 1 } },
+            { name: "Pidgeotto", baseStats: { hp: 63, atk: 60, def: 55, spatk: 50, spdef: 50, spe: 71 }, evYield: { spe: 2 } },
+            { name: "Pidgeot", baseStats: { hp: 83, atk: 80, def: 75, spatk: 70, spdef: 70, spe: 91 }, evYield: { spe: 3 } },
+            { name: "Rattata", baseStats: { hp: 30, atk: 56, def: 35, spatk: 25, spdef: 35, spe: 72 }, evYield: { spe: 1 } },
+            { name: "Raticate", baseStats: { hp: 55, atk: 81, def: 60, spatk: 50, spdef: 70, spe: 97 }, evYield: { spe: 2 } },
+            { name: "Spearow", baseStats: { hp: 40, atk: 60, def: 30, spatk: 31, spdef: 31, spe: 70 }, evYield: { spe: 1 } },
+            { name: "Fearow", baseStats: { hp: 65, atk: 90, def: 65, spatk: 61, spdef: 61, spe: 100 }, evYield: { spe: 2 } },
+            { name: "Ekans", baseStats: { hp: 35, atk: 60, def: 44, spatk: 40, spdef: 54, spe: 55 }, evYield: { atk: 1 } },
+            { name: "Arbok", baseStats: { hp: 60, atk: 85, def: 69, spatk: 65, spdef: 79, spe: 80 }, evYield: { atk: 2 } },
+            { name: "Pikachu", baseStats: { hp: 35, atk: 55, def: 40, spatk: 50, spdef: 50, spe: 90 }, evYield: { spe: 2 } },
+            { name: "Raichu", baseStats: { hp: 60, atk: 90, def: 55, spatk: 90, spdef: 80, spe: 100 }, evYield: { spe: 3 } },
+            { name: "Sandshrew", baseStats: { hp: 50, atk: 75, def: 85, spatk: 20, spdef: 30, spe: 40 }, evYield: { def: 1 } },
+            { name: "Sandslash", baseStats: { hp: 75, atk: 100, def: 110, spatk: 45, spdef: 55, spe: 65 }, evYield: { def: 2 } },
+            { name: "Nidoran♀", baseStats: { hp: 55, atk: 47, def: 52, spatk: 40, spdef: 40, spe: 41 }, evYield: { hp: 1 } },
+            { name: "Nidorina", baseStats: { hp: 70, atk: 62, def: 67, spatk: 55, spdef: 55, spe: 56 }, evYield: { hp: 2 } },
+            { name: "Nidoqueen", baseStats: { hp: 90, atk: 82, def: 87, spatk: 75, spdef: 85, spe: 76 }, evYield: { hp: 3 } },
+            { name: "Nidoran♂", baseStats: { hp: 46, atk: 57, def: 40, spatk: 40, spdef: 40, spe: 50 }, evYield: { atk: 1 } },
+            { name: "Nidorino", baseStats: { hp: 61, atk: 72, def: 57, spatk: 55, spdef: 55, spe: 65 }, evYield: { atk: 2 } },
+            { name: "Nidoking", baseStats: { hp: 81, atk: 92, def: 77, spatk: 85, spdef: 75, spe: 85 }, evYield: { atk: 3 } },
+            { name: "Clefairy", baseStats: { hp: 70, atk: 45, def: 48, spatk: 60, spdef: 65, spe: 35 }, evYield: { hp: 2 } },
+            { name: "Clefable", baseStats: { hp: 95, atk: 70, def: 73, spatk: 85, spdef: 90, spe: 60 }, evYield: { hp: 3 } },
+            { name: "Vulpix", baseStats: { hp: 38, atk: 41, def: 40, spatk: 50, spdef: 65, spe: 65 }, evYield: { spe: 1 } },
+            { name: "Ninetales", baseStats: { hp: 73, atk: 76, def: 75, spatk: 81, spdef: 100, spe: 100 }, evYield: { spdef: 2, spe: 1 } },
+            { name: "Jigglypuff", baseStats: { hp: 115, atk: 45, def: 20, spatk: 45, spdef: 25, spe: 20 }, evYield: { hp: 2 } },
+            { name: "Wigglytuff", baseStats: { hp: 140, atk: 70, def: 45, spatk: 75, spdef: 50, spe: 45 }, evYield: { hp: 3 } },
+            { name: "Zubat", baseStats: { hp: 40, atk: 45, def: 35, spatk: 30, spdef: 40, spe: 55 }, evYield: { spe: 1 } },
+            { name: "Golbat", baseStats: { hp: 75, atk: 80, def: 70, spatk: 65, spdef: 75, spe: 90 }, evYield: { spe: 2 } },
+            { name: "Oddish", baseStats: { hp: 45, atk: 50, def: 55, spatk: 75, spdef: 65, spe: 30 }, evYield: { spatk: 1 } },
+            { name: "Gloom", baseStats: { hp: 60, atk: 65, def: 70, spatk: 85, spdef: 75, spe: 40 }, evYield: { spatk: 2 } },
+            { name: "Vileplume", baseStats: { hp: 75, atk: 80, def: 85, spatk: 110, spdef: 90, spe: 50 }, evYield: { spatk: 3 } },
+            { name: "Paras", baseStats: { hp: 35, atk: 70, def: 55, spatk: 45, spdef: 55, spe: 25 }, evYield: { atk: 1 } },
+            { name: "Parasect", baseStats: { hp: 60, atk: 95, def: 80, spatk: 60, spdef: 80, spe: 30 }, evYield: { atk: 2 } },
+            { name: "Venonat", baseStats: { hp: 60, atk: 55, def: 50, spatk: 40, spdef: 55, spe: 45 }, evYield: { spdef: 1 } },
+            { name: "Venomoth", baseStats: { hp: 70, atk: 65, def: 60, spatk: 90, spdef: 75, spe: 90 }, evYield: { spe: 2 } },
+            { name: "Diglett", baseStats: { hp: 10, atk: 55, def: 25, spatk: 35, spdef: 45, spe: 95 }, evYield: { spe: 1 } },
+            { name: "Dugtrio", baseStats: { hp: 35, atk: 80, def: 50, spatk: 50, spdef: 70, spe: 120 }, evYield: { spe: 2 } },
+            { name: "Meowth", baseStats: { hp: 40, atk: 45, def: 35, spatk: 40, spdef: 40, spe: 90 }, evYield: { spe: 1 } },
+            { name: "Persian", baseStats: { hp: 65, atk: 70, def: 60, spatk: 65, spdef: 65, spe: 115 }, evYield: { spe: 2 } },
+            { name: "Psyduck", baseStats: { hp: 50, atk: 52, def: 48, spatk: 65, spdef: 50, spe: 55 }, evYield: { spatk: 1 } },
+            { name: "Golduck", baseStats: { hp: 80, atk: 82, def: 78, spatk: 95, spdef: 80, spe: 85 }, evYield: { spatk: 2 } },
+            { name: "Mankey", baseStats: { hp: 40, atk: 80, def: 35, spatk: 35, spdef: 45, spe: 70 }, evYield: { atk: 1 } },
+            { name: "Primeape", baseStats: { hp: 65, atk: 105, def: 60, spatk: 60, spdef: 70, spe: 95 }, evYield: { atk: 2 } },
+            { name: "Growlithe", baseStats: { hp: 55, atk: 70, def: 45, spatk: 70, spdef: 50, spe: 60 }, evYield: { atk: 1 } },
+            { name: "Arcanine", baseStats: { hp: 90, atk: 110, def: 80, spatk: 100, spdef: 80, spe: 95 }, evYield: { atk: 2 } },
+            { name: "Poliwag", baseStats: { hp: 40, atk: 50, def: 40, spatk: 40, spdef: 40, spe: 90 }, evYield: { spe: 1 } },
+            { name: "Poliwhirl", baseStats: { hp: 65, atk: 65, def: 65, spatk: 50, spdef: 50, spe: 90 }, evYield: { spe: 2 } },
+            { name: "Poliwrath", baseStats: { hp: 90, atk: 95, def: 95, spatk: 70, spdef: 90, spe: 70 }, evYield: { atk: 3 } },
+            { name: "Abra", baseStats: { hp: 25, atk: 20, def: 15, spatk: 105, spdef: 55, spe: 90 }, evYield: { spatk: 1 } },
+            { name: "Kadabra", baseStats: { hp: 40, atk: 35, def: 30, spatk: 120, spdef: 70, spe: 105 }, evYield: { spatk: 2 } },
+            { name: "Alakazam", baseStats: { hp: 55, atk: 50, def: 45, spatk: 135, spdef: 85, spe: 120 }, evYield: { spatk: 3 } },
+            { name: "Machop", baseStats: { hp: 70, atk: 80, def: 50, spatk: 35, spdef: 35, spe: 35 }, evYield: { atk: 1 } },
+            { name: "Machoke", baseStats: { hp: 80, atk: 100, def: 70, spatk: 50, spdef: 60, spe: 45 }, evYield: { atk: 2 } },
+            { name: "Machamp", baseStats: { hp: 90, atk: 130, def: 80, spatk: 65, spdef: 65, spe: 55 }, evYield: { atk: 3 } },
+            { name: "Bellsprout", baseStats: { hp: 50, atk: 75, def: 35, spatk: 70, spdef: 30, spe: 40 }, evYield: { atk: 1 } },
+            { name: "Weepinbell", baseStats: { hp: 65, atk: 90, def: 50, spatk: 85, spdef: 45, spe: 55 }, evYield: { atk: 2 } },
+            { name: "Victreebel", baseStats: { hp: 80, atk: 105, def: 65, spatk: 100, spdef: 60, spe: 70 }, evYield: { atk: 3 } },
+            { name: "Tentacool", baseStats: { hp: 40, atk: 40, def: 35, spatk: 50, spdef: 100, spe: 70 }, evYield: { spdef: 1 } },
+            { name: "Tentacruel", baseStats: { hp: 80, atk: 70, def: 65, spatk: 80, spdef: 120, spe: 100 }, evYield: { spdef: 2 } },
+            { name: "Geodude", baseStats: { hp: 40, atk: 80, def: 100, spatk: 30, spdef: 30, spe: 20 }, evYield: { def: 1 } },
+            { name: "Graveler", baseStats: { hp: 55, atk: 95, def: 115, spatk: 45, spdef: 45, spe: 35 }, evYield: { def: 2 } },
+            { name: "Golem", baseStats: { hp: 80, atk: 110, def: 130, spatk: 55, spdef: 65, spe: 45 }, evYield: { def: 3 } },
+            { name: "Ponyta", baseStats: { hp: 50, atk: 85, def: 55, spatk: 65, spdef: 65, spe: 90 }, evYield: { spe: 1 } },
+            { name: "Rapidash", baseStats: { hp: 65, atk: 100, def: 70, spatk: 80, spdef: 80, spe: 105 }, evYield: { spe: 2 } },
+            { name: "Slowpoke", baseStats: { hp: 90, atk: 65, def: 65, spatk: 40, spdef: 40, spe: 15 }, evYield: { hp: 1 } },
+            { name: "Slowbro", baseStats: { hp: 95, atk: 75, def: 110, spatk: 100, spdef: 80, spe: 30 }, evYield: { spatk: 2 } },
+            { name: "Magnemite", baseStats: { hp: 25, atk: 35, def: 70, spatk: 95, spdef: 55, spe: 45 }, evYield: { spatk: 1 } },
+            { name: "Magneton", baseStats: { hp: 50, atk: 60, def: 95, spatk: 120, spdef: 70, spe: 70 }, evYield: { spatk: 2 } },
+            { name: "Farfetch'd", baseStats: { hp: 52, atk: 65, def: 55, spatk: 58, spdef: 62, spe: 60 }, evYield: { atk: 1 } },
+            { name: "Doduo", baseStats: { hp: 35, atk: 85, def: 45, spatk: 35, spdef: 35, spe: 75 }, evYield: { atk: 1 } },
+            { name: "Dodrio", baseStats: { hp: 60, atk: 110, def: 70, spatk: 60, spdef: 60, spe: 100 }, evYield: { atk: 2 } },
+            { name: "Seel", baseStats: { hp: 65, atk: 45, def: 55, spatk: 45, spdef: 70, spe: 45 }, evYield: { spdef: 1 } },
+            { name: "Dewgong", baseStats: { hp: 90, atk: 70, def: 80, spatk: 70, spdef: 95, spe: 70 }, evYield: { spdef: 2 } },
+            { name: "Grimer", baseStats: { hp: 80, atk: 80, def: 50, spatk: 40, spdef: 50, spe: 25 }, evYield: { hp: 1 } },
+            { name: "Muk", baseStats: { hp: 105, atk: 105, def: 75, spatk: 65, spdef: 100, spe: 50 }, evYield: { hp: 2 } },
+            { name: "Shellder", baseStats: { hp: 30, atk: 65, def: 100, spatk: 45, spdef: 25, spe: 40 }, evYield: { def: 1 } },
+            { name: "Cloyster", baseStats: { hp: 50, atk: 95, def: 180, spatk: 85, spdef: 45, spe: 70 }, evYield: { def: 2 } },
+            { name: "Gastly", baseStats: { hp: 30, atk: 35, def: 30, spatk: 100, spdef: 35, spe: 80 }, evYield: { spatk: 1 } },
+            { name: "Haunter", baseStats: { hp: 45, atk: 50, def: 45, spatk: 115, spdef: 55, spe: 95 }, evYield: { spatk: 2 } },
+            { name: "Gengar", baseStats: { hp: 60, atk: 65, def: 60, spatk: 130, spdef: 75, spe: 110 }, evYield: { spatk: 3 } },
+            { name: "Onix", baseStats: { hp: 35, atk: 45, def: 160, spatk: 30, spdef: 45, spe: 70 }, evYield: { def: 1 } },
+            { name: "Drowzee", baseStats: { hp: 60, atk: 48, def: 45, spatk: 43, spdef: 90, spe: 42 }, evYield: { spdef: 1 } },
+            { name: "Hypno", baseStats: { hp: 85, atk: 73, def: 70, spatk: 73, spdef: 115, spe: 67 }, evYield: { spdef: 2 } },
+            { name: "Krabby", baseStats: { hp: 30, atk: 105, def: 90, spatk: 25, spdef: 25, spe: 50 }, evYield: { atk: 1 } },
+            { name: "Kingler", baseStats: { hp: 55, atk: 130, def: 115, spatk: 50, spdef: 50, spe: 75 }, evYield: { atk: 2 } },
+            { name: "Voltorb", baseStats: { hp: 40, atk: 30, def: 50, spatk: 55, spdef: 55, spe: 100 }, evYield: { spe: 1 } },
+            { name: "Electrode", baseStats: { hp: 60, atk: 50, def: 70, spatk: 80, spdef: 80, spe: 140 }, evYield: { spe: 2 } },
+            { name: "Exeggcute", baseStats: { hp: 60, atk: 40, def: 80, spatk: 60, spdef: 45, spe: 40 }, evYield: { hp: 1 } },
+            { name: "Exeggutor", baseStats: { hp: 95, atk: 95, def: 85, spatk: 125, spdef: 65, spe: 55 }, evYield: { spatk: 2 } },
+            { name: "Cubone", baseStats: { hp: 50, atk: 50, def: 95, spatk: 40, spdef: 50, spe: 35 }, evYield: { def: 1 } },
+            { name: "Marowak", baseStats: { hp: 60, atk: 80, def: 110, spatk: 50, spdef: 80, spe: 45 }, evYield: { def: 2 } },
+            { name: "Hitmonlee", baseStats: { hp: 50, atk: 120, def: 53, spatk: 35, spdef: 110, spe: 87 }, evYield: { atk: 2 } },
+            { name: "Hitmonchan", baseStats: { hp: 50, atk: 105, def: 79, spatk: 35, spdef: 110, spe: 76 }, evYield: { atk: 2 } },
+            { name: "Lickitung", baseStats: { hp: 90, atk: 55, def: 75, spatk: 60, spdef: 75, spe: 30 }, evYield: { hp: 2 } },
+            { name: "Koffing", baseStats: { hp: 40, atk: 65, def: 95, spatk: 60, spdef: 45, spe: 35 }, evYield: { def: 1 } },
+            { name: "Weezing", baseStats: { hp: 65, atk: 90, def: 120, spatk: 85, spdef: 70, spe: 60 }, evYield: { def: 2 } },
+            { name: "Rhyhorn", baseStats: { hp: 80, atk: 85, def: 95, spatk: 30, spdef: 30, spe: 25 }, evYield: { atk: 1 } },
+            { name: "Rhydon", baseStats: { hp: 105, atk: 130, def: 120, spatk: 45, spdef: 45, spe: 40 }, evYield: { atk: 2 } },
+            { name: "Chansey", baseStats: { hp: 250, atk: 5, def: 5, spatk: 35, spdef: 105, spe: 50 }, evYield: { hp: 2 } },
+            { name: "Tangela", baseStats: { hp: 65, atk: 55, def: 115, spatk: 100, spdef: 40, spe: 60 }, evYield: { def: 1 } },
+            { name: "Kangaskhan", baseStats: { hp: 105, atk: 95, def: 80, spatk: 40, spdef: 80, spe: 90 }, evYield: { hp: 2 } },
+            { name: "Horsea", baseStats: { hp: 30, atk: 40, def: 70, spatk: 70, spdef: 25, spe: 60 }, evYield: { spatk: 1 } },
+            { name: "Seadra", baseStats: { hp: 55, atk: 65, def: 95, spatk: 95, spdef: 45, spe: 85 }, evYield: { spatk: 2 } },
+            { name: "Goldeen", baseStats: { hp: 45, atk: 67, def: 60, spatk: 35, spdef: 50, spe: 63 }, evYield: { atk: 1 } },
+            { name: "Seaking", baseStats: { hp: 80, atk: 92, def: 65, spatk: 65, spdef: 80, spe: 68 }, evYield: { atk: 2 } },
+            { name: "Staryu", baseStats: { hp: 30, atk: 45, def: 55, spatk: 70, spdef: 55, spe: 85 }, evYield: { spe: 1 } },
+            { name: "Starmie", baseStats: { hp: 60, atk: 75, def: 85, spatk: 100, spdef: 85, spe: 115 }, evYield: { spe: 2 } },
+            { name: "Mr. Mime", baseStats: { hp: 40, atk: 45, def: 65, spatk: 100, spdef: 120, spe: 90 }, evYield: { spdef: 2 } },
+            { name: "Scyther", baseStats: { hp: 70, atk: 110, def: 80, spatk: 55, spdef: 80, spe: 105 }, evYield: { atk: 1 } },
+            { name: "Jynx", baseStats: { hp: 65, atk: 50, def: 35, spatk: 115, spdef: 95, spe: 95 }, evYield: { spatk: 2 } },
+            { name: "Electabuzz", baseStats: { hp: 65, atk: 83, def: 57, spatk: 95, spdef: 85, spe: 105 }, evYield: { spe: 2 } },
+            { name: "Magmar", baseStats: { hp: 65, atk: 95, def: 57, spatk: 100, spdef: 85, spe: 93 }, evYield: { spatk: 2 } },
+            { name: "Pinsir", baseStats: { hp: 65, atk: 125, def: 100, spatk: 55, spdef: 70, spe: 85 }, evYield: { atk: 2 } },
+            { name: "Tauros", baseStats: { hp: 75, atk: 100, def: 95, spatk: 40, spdef: 70, spe: 110 }, evYield: { spe: 2 } },
+            { name: "Magikarp", baseStats: { hp: 20, atk: 10, def: 55, spatk: 15, spdef: 20, spe: 80 }, evYield: { spe: 1 } },
+            { name: "Gyarados", baseStats: { hp: 95, atk: 125, def: 79, spatk: 60, spdef: 100, spe: 81 }, evYield: { atk: 2 } },
+            { name: "Lapras", baseStats: { hp: 130, atk: 85, def: 80, spatk: 85, spdef: 95, spe: 60 }, evYield: { hp: 2 } },
+            { name: "Ditto", baseStats: { hp: 48, atk: 48, def: 48, spatk: 48, spdef: 48, spe: 48 }, evYield: { hp: 1 } },
+            { name: "Eevee", baseStats: { hp: 55, atk: 55, def: 50, spatk: 45, spdef: 65, spe: 55 }, evYield: { spdef: 1 } },
+            { name: "Vaporeon", baseStats: { hp: 130, atk: 65, def: 60, spatk: 110, spdef: 95, spe: 65 }, evYield: { hp: 2 } },
+            { name: "Jolteon", baseStats: { hp: 65, atk: 65, def: 60, spatk: 110, spdef: 95, spe: 130 }, evYield: { spe: 2 } },
+            { name: "Flareon", baseStats: { hp: 65, atk: 130, def: 60, spatk: 95, spdef: 110, spe: 65 }, evYield: { spatk: 2 } },
+            { name: "Porygon", baseStats: { hp: 65, atk: 60, def: 70, spatk: 85, spdef: 75, spe: 40 }, evYield: { spatk: 1 } },
+            { name: "Omanyte", baseStats: { hp: 35, atk: 40, def: 100, spatk: 90, spdef: 55, spe: 35 }, evYield: { def: 1 } },
+            { name: "Omastar", baseStats: { hp: 70, atk: 60, def: 125, spatk: 115, spdef: 70, spe: 55 }, evYield: { def: 2 } },
+            { name: "Kabuto", baseStats: { hp: 30, atk: 80, def: 90, spatk: 55, spdef: 45, spe: 55 }, evYield: { def: 1 } },
+            { name: "Kabutops", baseStats: { hp: 60, atk: 115, def: 105, spatk: 65, spdef: 70, spe: 80 }, evYield: { atk: 2 } },
+            { name: "Aerodactyl", baseStats: { hp: 80, atk: 105, def: 65, spatk: 60, spdef: 75, spe: 130 }, evYield: { spe: 2 } },
+            { name: "Snorlax", baseStats: { hp: 160, atk: 110, def: 65, spatk: 65, spdef: 110, spe: 30 }, evYield: { hp: 2 } },
+            { name: "Articuno", baseStats: { hp: 90, atk: 85, def: 100, spatk: 95, spdef: 125, spe: 85 }, evYield: { spdef: 3 } },
+            { name: "Zapdos", baseStats: { hp: 90, atk: 90, def: 85, spatk: 125, spdef: 90, spe: 100 }, evYield: { spatk: 3 } },
+            { name: "Moltres", baseStats: { hp: 90, atk: 100, def: 90, spatk: 125, spdef: 85, spe: 90 }, evYield: { spatk: 3 } },
+            { name: "Dratini", baseStats: { hp: 41, atk: 64, def: 45, spatk: 50, spdef: 50, spe: 50 }, evYield: { atk: 1 } },
+            { name: "Dragonair", baseStats: { hp: 61, atk: 84, def: 65, spatk: 70, spdef: 70, spe: 70 }, evYield: { atk: 2 } },
+            { name: "Dragonite", baseStats: { hp: 91, atk: 134, def: 95, spatk: 100, spdef: 100, spe: 80 }, evYield: { atk: 3 } },
+            { name: "Mewtwo", baseStats: { hp: 106, atk: 110, def: 90, spatk: 154, spdef: 90, spe: 130 }, evYield: { spatk: 3 } },
+            { name: "Mew", baseStats: { hp: 100, atk: 100, def: 100, spatk: 100, spdef: 100, spe: 100 }, evYield: { hp: 3 } }
+        ];
+
+        // Nature data (Gen 3 modifiers)
+        const NATURES = {
+            "Hardy": { atk: 1.0, def: 1.0, spatk: 1.0, spdef: 1.0, spe: 1.0 },
+            "Lonely": { atk: 1.1, def: 0.9, spatk: 1.0, spdef: 1.0, spe: 1.0 },
+            "Brave": { atk: 1.1, def: 1.0, spatk: 1.0, spdef: 1.0, spe: 0.9 },
+            "Adamant": { atk: 1.1, def: 1.0, spatk: 0.9, spdef: 1.0, spe: 1.0 },
+            "Naughty": { atk: 1.1, def: 1.0, spatk: 1.0, spdef: 0.9, spe: 1.0 },
+            "Bold": { atk: 0.9, def: 1.1, spatk: 1.0, spdef: 1.0, spe: 1.0 },
+            "Docile": { atk: 1.0, def: 1.0, spatk: 1.0, spdef: 1.0, spe: 1.0 },
+            "Relaxed": { atk: 1.0, def: 1.1, spatk: 1.0, spdef: 1.0, spe: 0.9 },
+            "Impish": { atk: 1.0, def: 1.1, spatk: 0.9, spdef: 1.0, spe: 1.0 },
+            "Lax": { atk: 1.0, def: 1.1, spatk: 1.0, spdef: 0.9, spe: 1.0 },
+            "Timid": { atk: 0.9, def: 1.0, spatk: 1.0, spdef: 1.0, spe: 1.1 },
+            "Hasty": { atk: 1.0, def: 0.9, spatk: 1.0, spdef: 1.0, spe: 1.1 },
+            "Serious": { atk: 1.0, def: 1.0, spatk: 1.0, spdef: 1.0, spe: 1.0 },
+            "Jolly": { atk: 1.0, def: 1.0, spatk: 0.9, spdef: 1.0, spe: 1.1 },
+            "Naive": { atk: 1.0, def: 1.0, spatk: 1.0, spdef: 0.9, spe: 1.1 },
+            "Modest": { atk: 0.9, def: 1.0, spatk: 1.1, spdef: 1.0, spe: 1.0 },
+            "Mild": { atk: 1.0, def: 0.9, spatk: 1.1, spdef: 1.0, spe: 1.0 },
+            "Quiet": { atk: 1.0, def: 1.0, spatk: 1.1, spdef: 1.0, spe: 0.9 },
+            "Rash": { atk: 1.0, def: 1.0, spatk: 1.1, spdef: 0.9, spe: 1.0 },
+            "Calm": { atk: 0.9, def: 1.0, spatk: 1.0, spdef: 1.1, spe: 1.0 },
+            "Gentle": { atk: 1.0, def: 0.9, spatk: 1.0, spdef: 1.1, spe: 1.0 },
+            "Sassy": { atk: 1.0, def: 1.0, spatk: 1.0, spdef: 1.1, spe: 0.9 },
+            "Careful": { atk: 1.0, def: 1.0, spatk: 0.9, spdef: 1.1, spe: 1.0 },
+            "Quirky": { atk: 1.0, def: 1.0, spatk: 1.0, spdef: 1.0, spe: 1.0 },
+            "Unknown": { atk: 1.0, def: 1.0, spatk: 1.0, spdef: 1.0, spe: 1.0 } // Added "Unknown" nature
+        };
+
+        // Get DOM elements for Stat Calculator
+        const levelInput = document.getElementById('level');
+
+        // Manual IV inputs
+        const ivHpInput = document.getElementById('ivHp');
+        const ivAtkInput = document.getElementById('ivAtk');
+        const ivDefInput = document.getElementById('ivDef');
+        const ivSpAtkInput = document.getElementById('ivSpAtk');
+        const ivSpDefInput = document.getElementById('ivSpDef');
+        const ivSpeInput = document.getElementById('ivSpe');
+        const ivInputsContainer = document.getElementById('ivInputsContainer');
+        const ivSourceRadios = document.querySelectorAll('input[name="ivSource"]');
+        const radioUseEstimatedIvs = document.getElementById('radioUseEstimatedIvs');
+
+        // Manual EV inputs
+        const evHpInput = document.getElementById('evHp');
+        const evAtkInput = document.getElementById('evAtk');
+        const evDefInput = document.getElementById('evDef');
+        const evSpAtkInput = document.getElementById('evSpAtk');
+        const evSpDefInput = document.getElementById('evSpDef');
+        const evSpeInput = document.getElementById('evSpe');
+        const evInputsContainer = document.getElementById('evInputsContainer');
+        const evSourceRadios = document.querySelectorAll('input[name="evSource"]');
+        const radioUseTrackedEvs = document.getElementById('radioUseTrackedEvs');
+
+        const natureSelect = document.getElementById('natureSelect');
+        const calculateBtn = document.getElementById('calculateBtn');
+        const resultsSection = document.getElementById('results');
+        const statCalculatorErrorMessageDiv = document.getElementById('statCalculatorErrorMessage');
+
+        // Display elements for Stat Calculator results
+        const displayHp = document.getElementById('displayHp');
+        const displayAtk = document.getElementById('displayAtk');
+        const displayDef = document.getElementById('displayDef');
+        const displaySpAtk = document.getElementById('displaySpAtk');
+        const displaySpDef = document.getElementById('displaySpDef');
+        const displaySpe = document.getElementById('displaySpe');
+
+        // Get DOM elements for IV Estimator
+        const ivCalcLevelInput = document.getElementById('ivCalcLevel');
+        const ivCalcHpInput = document.getElementById('ivCalcHp');
+        const ivCalcAtkInput = document.getElementById('ivCalcAtk');
+        const ivCalcDefInput = document.getElementById('ivCalcDef');
+        const ivCalcSpAtkInput = document.getElementById('ivCalcSpAtk');
+        const ivCalcSpDefInput = document.getElementById('ivCalcSpDef');
+        const ivCalcSpeInput = document.getElementById('ivCalcSpe');
+        const ivCalcNatureSelect = document.getElementById('ivCalcNatureSelect');
+        const ivCalcEvHpInput = document.getElementById('ivCalcEvHp');
+        const ivCalcEvAtkInput = document.getElementById('ivCalcEvAtk');
+        const ivCalcEvDefInput = document.getElementById('ivCalcEvDef');
+        const ivCalcEvSpAtkInput = document.getElementById('ivCalcEvSpAtk');
+        const ivCalcEvSpDefInput = document.getElementById('ivCalcEvSpDef');
+        const ivCalcEvSpeInput = document.getElementById('ivCalcEvSpe');
+        const calculateIvBtn = document.getElementById('calculateIvBtn');
+        const ivResultsSection = document.getElementById('ivResults');
+        const ivEstimatorErrorMessageDiv = document.getElementById('ivEstimatorErrorMessage');
+
+        // Display elements for IV Estimator results
+        const displayIvHp = document.getElementById('displayIvHp');
+        const displayIvAtk = document.getElementById('displayIvAtk');
+        const displayIvDef = document.getElementById('displayIvDef');
+        const displayIvSpAtk = document.getElementById('displayIvSpAtk');
+        const displayIvSpDef = document.getElementById('displayIvSpDef');
+        const displayIvSpe = document.getElementById('displayIvSpe');
+
+        // Get DOM elements for EV Tracker
+        const evPokemonGrid = document.getElementById('evPokemonGrid');
+        const resetEvsBtn = document.getElementById('resetEvsBtn');
+        const clearPartyBtn = document.getElementById('clearPartyBtn');
+        const trackedPokemonNameDisplay = document.getElementById('trackedPokemonNameDisplay');
+        const trackedPokemonPartyDisplay = document.getElementById('trackedPokemonPartyDisplay');
+
+        const currentEvHp = document.getElementById('currentEvHp');
+        const currentEvAtk = document.getElementById('currentEvAtk');
+        const currentEvDef = document.getElementById('currentEvDef');
+        const currentEvSpAtk = document.getElementById('currentEvSpAtk');
+        const currentEvSpDef = document.getElementById('currentEvSpDef');
+        const currentEvSpe = document.getElementById('currentEvSpe');
+        const totalEvsDisplay = document.getElementById('totalEvs');
+        const evTrackerErrorMessageDiv = document.getElementById('evTrackerErrorMessage');
+
+        // Modals
+        const pokemonSelectionModal = document.getElementById('pokemonSelectionModal');
+        const closeModalBtn = document.getElementById('closeModalBtn');
+        const modalPokemonGrid = document.getElementById('modalPokemonGrid');
+
+        const confirmationModal = document.getElementById('confirmationModal');
+        const confirmModalTitle = document.getElementById('confirmModalTitle');
+        const confirmModalMessage = document.getElementById('confirmModalMessage');
+        const confirmYesBtn = document.getElementById('confirmYesBtn');
+        const confirmNoBtn = document.getElementById('confirmNoBtn');
+
+        // Global state for estimated IVs and tracked EVs
+        let trackedPokemon = []; // Each item: { customName: "My Pokémon", basePokemonId: "bulbasaur", basePokemonDisplayName: "Bulbasaur", evs: { hp: 0, atk: 0, ... }, estimatedIvs: null, level: 50, nature: "Hardy", currentStats: { hp: '', atk: '', ... }, knownEvsForIvEstimator: { hp: 0, atk: 0, ... } }
+        let selectedTrackedPokemonIndex = -1; // Index of the currently selected Pokémon in `trackedPokemon`
+        let currentModalTargetIndex = -1; // Stores the index of the tracked Pokémon being edited in the modal
+        let currentConfirmAction = null; // Stores the function to call if confirmation is 'Yes'
+
+        // Store last manual IV/EV inputs to revert to
+        let lastManualIvs = { hp: 31, atk: 31, def: 31, spatk: 31, spdef: 31, spe: 31 };
+        let lastManualEvs = { hp: 0, atk: 0, def: 0, spatk: 0, spdef: 0, spe: 0 };
+
+
+        // Tab elements
+        const tabButtons = document.querySelectorAll('.tab-button');
+        const tabContents = document.querySelectorAll('.tab-content');
+
+        /**
+         * Switches between calculator tabs.
+         * @param {string} tabId - The ID of the tab content to show.
+         */
+        function switchTab(tabId) {
+            tabContents.forEach(content => {
+                if (content.id === tabId) {
+                    content.classList.remove('hidden');
+                } else {
+                    content.classList.add('hidden');
+                }
+            });
+
+            tabButtons.forEach(button => {
+                if (button.dataset.tab === tabId) {
+                    button.classList.add('active');
+                } else {
+                    button.classList.remove('active');
+                }
+            });
+
+            // Clear any error messages and hide results when switching tabs
+            hideErrorMessage(statCalculatorErrorMessageDiv);
+            hideErrorMessage(ivEstimatorErrorMessageDiv);
+            resultsSection.classList.add('hidden');
+            ivResultsSection.classList.add('hidden');
+            // Only hide EV tracker error if not on EV tracker tab
+            if (tabId !== 'ev-tracker') {
+                hideErrorMessage(evTrackerErrorMessageDiv);
+            }
+
+            // Update inputs based on the currently selected Pokémon
+            updateLevelAndNatureInputs();
+            updateIvEstimatorInputs(); // New: Update IV Estimator inputs
+            updateStatCalculatorSourceOptions();
+        }
+
+        /**
+         * Populates the Nature dropdown with all available natures.
+         * @param {HTMLElement} selectElement - The select element to populate.
+         */
+        function populateNatureDropdown(selectElement) {
+            selectElement.innerHTML = ''; // Clear existing options
+            for (const natureName in NATURES) {
+                const option = document.createElement('option');
+                option.value = natureName;
+                option.textContent = natureName;
+                selectElement.appendChild(option);
+            }
+        }
+
+        /**
+         * Calculates a Pokémon's stat (excluding HP) based on Gen 3 formula.
+         * @param {number} base - The base stat value.
+         * @param {number} iv - The Individual Value (0-31).
+         * @param {number} ev - The Effort Value (0-255).
+         * @param {number} level - The Pokémon's level (1-100).
+         * @param {number} natureMod - The nature modifier (0.9, 1.0, or 1.1).
+         * @returns {number} The calculated stat value.
+         */
+        function calculateStat(base, iv, ev, level, natureMod) {
+            const stat = Math.floor((((2 * base + iv + Math.floor(ev / 4)) * level) / 100) + 5);
+            return Math.floor(stat * natureMod);
+        }
+
+        /**
+         * Calculates a Pokémon's HP stat based on Gen 3 formula.
+         * @param {number} base - The base HP stat value.
+         * @param {number} iv - The HP Individual Value (0-31).
+         * @param {number} ev - The HP Effort Value (0-255).
+         * @param {number} level - The Pokémon's level (1-100).
+         * @returns {number} The calculated HP stat value.
+         */
+        function calculateHp(base, iv, ev, level) {
+            return Math.floor((((2 * base + iv + Math.floor(ev / 4)) * level) + (level * 100)) / 100 + 10);
+        }
+
+        /**
+         * Displays an error message in the specified error div.
+         * @param {HTMLElement} errorDiv - The div element to display the error.
+         * @param {string} message - The error message to display.
+         */
+        function showErrorMessage(errorDiv, message) {
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
+
+        /**
+         * Hides the error message in the specified error div.
+         * @param {HTMLElement} errorDiv - The div element to hide the error.
+         */
+        function hideErrorMessage(errorDiv) {
+            errorDiv.textContent = '';
+            errorDiv.style.display = 'none';
+        }
+
+        /**
+         * Validates input values for the Stat Calculator.
+         * @param {object} ivs - The IVs object being used for calculation.
+         * @param {object} evs - The EVs object being used for calculation.
+         * @returns {boolean} True if all inputs are valid, false otherwise.
+         */
+        function validateStatCalculatorInputs(ivs, evs) {
+            hideErrorMessage(statCalculatorErrorMessageDiv); // Clear previous errors
+
+            const level = parseInt(levelInput.value);
+            if (isNaN(level) || level < 1 || level > 100) {
+                showErrorMessage(statCalculatorErrorMessageDiv, "Level must be between 1 and 100.");
+                return false;
+            }
+
+            // Validate IVs
+            for (const stat in ivs) {
+                const iv = ivs[stat];
+                if (isNaN(iv) || iv < 0 || iv > 31) {
+                    showErrorMessage(statCalculatorErrorMessageDiv, `IV for ${stat.toUpperCase()} must be between 0 and 31.`);
+                    return false;
+                }
+            }
+
+            // Validate EVs
+            let totalEvs = 0;
+            for (const stat in evs) {
+                const ev = evs[stat];
+                if (isNaN(ev) || ev < 0 || ev > 255) {
+                    showErrorMessage(statCalculatorErrorMessageDiv, `EV for ${stat.toUpperCase()} must be between 0 and 255.`);
+                    return false;
+                }
+                totalEvs += ev;
+            }
+
+            if (totalEvs > 510) {
+                showErrorMessage(statCalculatorErrorMessageDiv, `Total EVs cannot exceed 510. Current total: ${totalEvs}`);
+                return false;
+            }
+
+            return true;
+        }
+
+        /**
+         * Handles the calculation for the Stat Calculator.
+         */
+        function handleStatCalculate() {
+            // Ensure a Pokémon is selected in the party
+            if (selectedTrackedPokemonIndex === -1 || !trackedPokemon[selectedTrackedPokemonIndex] || !trackedPokemon[selectedTrackedPokemonIndex].basePokemonId) {
+                showErrorMessage(statCalculatorErrorMessageDiv, "Please select and assign a Pokémon in the party display above to calculate its stats.");
+                resultsSection.classList.add('hidden');
+                return;
+            }
+
+            const selectedPokemonName = trackedPokemon[selectedTrackedPokemonIndex].basePokemonDisplayName;
+            const selectedPokemon = KANTO_POKEMON.find(p => p.name === selectedPokemonName);
+
+            if (!selectedPokemon) {
+                showErrorMessage(statCalculatorErrorMessageDiv, "Selected Pokémon not found in database. Please re-assign a Pokémon in the party.");
+                resultsSection.classList.add('hidden');
+                return;
+            }
+
+            let ivsToUse = {};
+            let evsToUse = {};
+
+            // Determine IVs to use
+            const selectedIvSource = document.querySelector('input[name="ivSource"]:checked').value;
+            if (selectedIvSource === 'manual') {
+                ivsToUse = {
+                    hp: parseInt(ivHpInput.value),
+                    atk: parseInt(ivAtkInput.value),
+                    def: parseInt(ivDefInput.value),
+                    spatk: parseInt(ivSpAtkInput.value),
+                    spdef: parseInt(ivSpDefInput.value),
+                    spe: parseInt(ivSpeInput.value)
+                };
+            } else if (selectedIvSource === 'estimated') {
+                const currentPokemonEstimatedIvs = trackedPokemon[selectedTrackedPokemonIndex].estimatedIvs;
+                if (!currentPokemonEstimatedIvs || Object.values(currentPokemonEstimatedIvs).some(val => val === null)) {
+                    showErrorMessage(statCalculatorErrorMessageDiv, "No complete estimated IVs available for the selected Pokémon. Please use the IV Estimator tab first and ensure all stats are estimated.");
+                    resultsSection.classList.add('hidden');
+                    return;
+                }
+                ivsToUse = currentPokemonEstimatedIvs;
+            }
+
+            // Determine EVs to use
+            const selectedEvSource = document.querySelector('input[name="evSource"]:checked').value;
+            if (selectedEvSource === 'manual') {
+                evsToUse = {
+                    hp: parseInt(evHpInput.value),
+                    atk: parseInt(evAtkInput.value),
+                    def: parseInt(evDefInput.value),
+                    spatk: parseInt(evSpAtkInput.value),
+                    spdef: parseInt(evSpDefInput.value),
+                    spe: parseInt(evSpeInput.value)
+                };
+            } else if (selectedEvSource === 'tracked') {
+                // Check if a Pokémon is assigned to the selected slot before trying to access its EVs
+                if (!trackedPokemon[selectedTrackedPokemonIndex].basePokemonId) {
+                    showErrorMessage(statCalculatorErrorMessageDiv, "No Pokémon assigned to the selected party slot to retrieve tracked EVs from. Please select a Pokémon or use manual EVs.");
+                    resultsSection.classList.add('hidden');
+                    return;
+                }
+                evsToUse = trackedPokemon[selectedTrackedPokemonIndex].evs; // Use the globally tracked EVs for the selected Pokémon
+            }
+
+            if (!validateStatCalculatorInputs(ivsToUse, evsToUse)) {
+                resultsSection.classList.add('hidden');
+                return; // Stop if inputs are invalid
+            }
+
+            const level = parseInt(levelInput.value);
+            const selectedNature = natureSelect.value;
+            const natureModifiers = NATURES[selectedNature];
+
+            // Calculate HP
+            const calculatedHp = calculateHp(selectedPokemon.baseStats.hp, ivsToUse.hp, evsToUse.hp, level);
+
+            // Calculate other stats
+            const calculatedAtk = calculateStat(selectedPokemon.baseStats.atk, ivsToUse.atk, evsToUse.atk, level, natureModifiers.atk);
+            const calculatedDef = calculateStat(selectedPokemon.baseStats.def, ivsToUse.def, evsToUse.def, level, natureModifiers.def);
+            const calculatedSpAtk = calculateStat(selectedPokemon.baseStats.spatk, ivsToToUse.spatk, evsToUse.spatk, level, natureModifiers.spatk);
+            const calculatedSpDef = calculateStat(selectedPokemon.baseStats.spdef, ivsToUse.spdef, evsToUse.spdef, level, natureModifiers.spdef);
+            const calculatedSpe = calculateStat(selectedPokemon.baseStats.spe, ivsToUse.spe, evsToUse.spe, level, natureModifiers.spe);
+
+            // Display results
+            displayHp.textContent = calculatedHp;
+            displayAtk.textContent = calculatedAtk;
+            displayDef.textContent = calculatedDef;
+            displaySpAtk.textContent = calculatedSpAtk;
+            displaySpDef.textContent = calculatedSpDef;
+            displaySpe.textContent = calculatedSpe;
+
+            resultsSection.classList.remove('hidden'); // Show the results section
+        }
+
+        /**
+         * Validates input values for the IV Estimator.
+         * @returns {boolean} True if all inputs are valid, false otherwise.
+         */
+        function validateIvEstimatorInputsForm() { // Renamed to avoid conflict with updateIvEstimatorInputs
+            hideErrorMessage(ivEstimatorErrorMessageDiv); // Clear previous errors
+
+            // Ensure a Pokémon is selected in the party
+            if (selectedTrackedPokemonIndex === -1 || !trackedPokemon[selectedTrackedPokemonIndex] || !trackedPokemon[selectedTrackedPokemonIndex].basePokemonId) {
+                showErrorMessage(ivEstimatorErrorMessageDiv, "Please select and assign a Pokémon in the party display above to estimate its IVs.");
+                return false;
+            }
+
+            const level = parseInt(ivCalcLevelInput.value);
+            if (isNaN(level) || level < 1 || level > 100) {
+                showErrorMessage(ivEstimatorErrorMessageDiv, "Level must be between 1 and 100.");
+                return false;
+            }
+
+            const actualStats = {
+                hp: parseInt(ivCalcHpInput.value),
+                atk: parseInt(ivCalcAtkInput.value),
+                def: parseInt(ivCalcDefInput.value),
+                spatk: parseInt(ivCalcSpAtkInput.value),
+                spdef: parseInt(ivCalcSpDefInput.value),
+                spe: parseInt(ivCalcSpeInput.value)
+            };
+
+            for (const statName in actualStats) {
+                const stat = actualStats[statName];
+                if (isNaN(stat) || stat < 1) { // Stats must be at least 1
+                    showErrorMessage(ivEstimatorErrorMessageDiv, `${statName.toUpperCase()} must be a positive number.`);
+                    return false;
+                }
+            }
+
+
+            const evs = {
+                hp: parseInt(ivCalcEvHpInput.value),
+                atk: parseInt(ivCalcEvAtkInput.value),
+                def: parseInt(ivCalcEvDefInput.value),
+                spatk: parseInt(ivCalcEvSpAtkInput.value),
+                spdef: parseInt(ivCalcEvSpDefInput.value),
+                spe: parseInt(ivCalcEvSpeInput.value)
+            };
+            let totalEvs = 0;
+            for (const stat in evs) {
+                const ev = evs[stat];
+                if (isNaN(ev) || ev < 0 || ev > 255) {
+                    showErrorMessage(ivEstimatorErrorMessageDiv, `${stat.toUpperCase()} EV must be between 0 and 255.`);
+                    return false;
+                }
+                totalEvs += ev;
+            }
+
+            if (totalEvs > 510) {
+                showErrorMessage(ivEstimatorErrorMessageDiv, `Total EVs cannot exceed 510. Current total: ${totalEvs}`);
+                return false;
+            }
+
+            return true;
+        }
+
+        /**
+         * Estimates the IV range for a given stat.
+         * @param {number} actualStat - The actual stat value of the Pokémon.
+         * @param {number} baseStat - The base stat value of the Pokémon.
+         * @param {number} ev - The Effort Value for this stat.
+         * @param {number} level - The Pokémon's level.
+         * @param {number} natureMod - The nature modifier for this stat.
+         * @param {boolean} isHp - True if calculating HP, false otherwise.
+         * @returns {object} An object containing the estimated IV range and the specific IV value (highest in range).
+         */
+        function estimateIv(actualStat, baseStat, ev, level, natureMod, isHp) {
+            const possibleIvs = [];
+            for (let iv = 0; iv <= 31; iv++) {
+                let calculatedStat;
+                if (isHp) {
+                    calculatedStat = calculateHp(baseStat, iv, ev, level);
+                } else {
+                    calculatedStat = calculateStat(baseStat, iv, ev, level, natureMod);
+                }
+
+                if (calculatedStat === actualStat) {
+                    possibleIvs.push(iv);
+                }
+            }
+
+            if (possibleIvs.length === 0) {
+                return { range: "Unknown (Stat mismatch)", value: null };
+            } else if (possibleIvs.length === 1) {
+                return { range: possibleIvs[0].toString(), value: possibleIvs[0] };
+            } else {
+                return { range: `${possibleIvs[0]}-${possibleIvs[possibleIvs.length - 1]}`, value: possibleIvs[possibleIvs.length - 1] }; // Use max IV in range
+            }
+        }
+
+        /**
+         * Handles the calculation for the IV Estimator.
+         */
+        function handleIvEstimate() {
+            if (!validateIvEstimatorInputsForm()) { // Use the form validation function
+                ivResultsSection.classList.add('hidden');
+                return;
+            }
+
+            // Get selected Pokémon from the tracked party
+            const selectedPokemonName = trackedPokemon[selectedTrackedPokemonIndex].basePokemonDisplayName;
+            const selectedPokemon = KANTO_POKEMON.find(p => p.name === selectedPokemonName);
+
+            if (!selectedPokemon) {
+                showErrorMessage(ivEstimatorErrorMessageDiv, "Selected Pokémon not found in database. Please re-assign a Pokémon in the party.");
+                ivResultsSection.classList.add('hidden');
+                return;
+            }
+
+            const level = parseInt(ivCalcLevelInput.value);
+
+            const actualStats = {
+                hp: parseInt(ivCalcHpInput.value),
+                atk: parseInt(ivCalcAtkInput.value),
+                def: parseInt(ivCalcDefInput.value),
+                spatk: parseInt(ivCalcSpAtkInput.value),
+                spdef: parseInt(ivCalcSpDefInput.value),
+                spe: parseInt(ivCalcSpeInput.value)
+            };
+
+            const knownEvs = {
+                hp: parseInt(ivCalcEvHpInput.value),
+                atk: parseInt(ivCalcEvAtkInput.value),
+                def: parseInt(ivCalcEvDefInput.value),
+                spatk: parseInt(ivCalcEvSpAtkInput.value),
+                spdef: parseInt(ivCalcEvSpDefInput.value),
+                spe: parseInt(ivCalcEvSpeInput.value)
+            };
+
+            const selectedNature = ivCalcNatureSelect.value;
+            const natureModifiers = NATURES[selectedNature];
+
+            // Estimate IVs for each stat
+            const resultHp = estimateIv(actualStats.hp, selectedPokemon.baseStats.hp, knownEvs.hp, level, 1.0, true);
+            const resultAtk = estimateIv(actualStats.atk, selectedPokemon.baseStats.atk, knownEvs.atk, level, natureModifiers.atk, false);
+            const resultDef = estimateIv(actualStats.def, selectedPokemon.baseStats.def, knownEvs.def, level, natureModifiers.def, false);
+            const resultSpAtk = estimateIv(actualStats.spatk, selectedPokemon.baseStats.spatk, knownEvs.spatk, level, natureModifiers.spatk, false);
+            const resultSpDef = estimateIv(actualStats.spdef, selectedPokemon.baseStats.spdef, knownEvs.spdef, level, natureModifiers.spdef, false);
+            const resultSpe = estimateIv(actualStats.spe, selectedPokemon.baseStats.spe, knownEvs.spe, level, natureModifiers.spe, false);
+
+            // Store estimated IVs for the CURRENTLY SELECTED Pokémon in the trackedPokemon array
+            trackedPokemon[selectedTrackedPokemonIndex].estimatedIvs = {
+                hp: resultHp.value,
+                atk: resultAtk.value,
+                def: resultDef.value,
+                spatk: resultSpAtk.value,
+                spdef: resultSpDef.value,
+                spe: resultSpe.value
+            };
+            // Store the actual stats and known EVs entered for the IV Estimator
+            trackedPokemon[selectedTrackedPokemonIndex].currentStats = actualStats;
+            trackedPokemon[selectedTrackedPokemonIndex].knownEvsForIvEstimator = knownEvs;
+
+            saveTrackedPokemon(); // Save the updated trackedPokemon array
+
+            // Display IV results
+            displayIvHp.textContent = resultHp.range;
+            displayIvAtk.textContent = resultAtk.range;
+            displayIvDef.textContent = resultDef.range;
+            displayIvSpAtk.textContent = resultSpAtk.range;
+            displayIvSpDef.textContent = resultSpDef.range;
+            displayIvSpe.textContent = resultSpe.range;
+
+            ivResultsSection.classList.remove('hidden'); // Show the IV results section
+
+            // Enable "Use Estimated IVs" option on Stat Calculator
+            updateStatCalculatorSourceOptions();
+        }
+
+        /**
+         * Formats a Pokémon name for sprite URL compatibility.
+         * @param {string} name - The original Pokémon name.
+         * @returns {string} The formatted name for the URL.
+         */
+        function formatPokemonNameForSprite(name) {
+            // Convert to lowercase
+            let formattedName = name.toLowerCase();
+
+            // Handle special characters and spaces
+            formattedName = formattedName.replace(/♀/g, 'f'); // Nidoran♀ -> nidoranf
+            formattedName = formattedName.replace(/♂/g, 'm'); // Nidoran♂ -> nidoranm
+            formattedName = formattedName.replace(/ /g, '');   // Remove spaces (e.g., Mr. Mime -> mrmime)
+            formattedName = formattedName.replace(/'/g, '');  // Remove apostrophes (e.g., Farfetch'd -> farfetchd)
+            formattedName = formattedName.replace(/\./g, ''); // Remove periods (e.g., Mr. Mime -> mrmime)
+
+            return formattedName;
+        }
+
+        /**
+         * Populates the EV Pokémon grid with clickable items, including sprites.
+         */
+        function populateEvPokemonGrid() {
+            evPokemonGrid.innerHTML = ''; // Clear existing items
+            KANTO_POKEMON.forEach(pokemon => {
+                const evYieldString = Object.entries(pokemon.evYield)
+                    .map(([stat, value]) => `${value} ${stat.toUpperCase()}`)
+                    .join(', ');
+
+                // Construct sprite URL using Pokémon Showdown's Gen 3 static sprites
+                const formattedName = formatPokemonNameForSprite(pokemon.name);
+                const spriteUrl = `https://play.pokemonshowdown.com/sprites/gen3/${formattedName}.png`;
+
+                const pokemonItem = document.createElement('div');
+                pokemonItem.classList.add('ev-pokemon-item');
+                pokemonItem.dataset.pokemonName = pokemon.name; // Store name for easy lookup
+                pokemonItem.innerHTML = `
+                    <img src="${spriteUrl}" alt="${pokemon.name} sprite" onerror="this.onerror=null;this.src='https://placehold.co/60x60/cccccc/000000?text=N/A';" />
+                    <strong>${pokemon.name}</strong>
+                    <span>EV: ${evYieldString || 'None'}</span>
+                `;
+                pokemonItem.addEventListener('click', () => addEvs(pokemon.evYield));
+                evPokemonGrid.appendChild(pokemonItem);
+            });
+        }
+
+        /**
+         * Renders the user's tracked Pokémon party as clickable sprite-like elements.
+         */
+        function renderTrackedPokemonParty() {
+            trackedPokemonPartyDisplay.innerHTML = ''; // Clear existing items
+
+            if (trackedPokemon.length === 0) {
+                trackedPokemonNameDisplay.textContent = 'None Selected';
+                updateEvDisplay(); // Reset display if no Pokémon
+                return;
+            }
+
+            trackedPokemon.forEach((pkmn, index) => {
+                const partyItem = document.createElement('div');
+                partyItem.classList.add('ev-pokemon-item'); // Reuse styling
+                partyItem.classList.add('tracked-party-item'); // Add specific class for styling/selection
+                if (index === selectedTrackedPokemonIndex) {
+                    partyItem.classList.add('active-tracked-pokemon'); // Add active class
+                }
+
+                let spriteUrl;
+                let altText;
+                if (pkmn.basePokemonId) {
+                    spriteUrl = `https://play.pokemonshowdown.com/sprites/gen3/${pkmn.basePokemonId}.png`;
+                    altText = `${pkmn.basePokemonDisplayName} sprite`;
+                } else {
+                    spriteUrl = `https://placehold.co/60x60/dbeafe/1e40af?text=??`; // Placeholder for unselected
+                    altText = "Unselected Pokémon";
+                }
+
+                const pokemonNameElement = document.createElement('strong');
+                pokemonNameElement.textContent = pkmn.customName; // Display custom name
+
+                partyItem.innerHTML = `
+                    <img src="${spriteUrl}" alt="${altText}" onerror="this.onerror=null;this.src='https://placehold.co/60x60/cccccc/000000?text=N/A';" />
+                    <div class="change-pokemon-button" data-index="${index}">Change</div>
+                `;
+                partyItem.appendChild(pokemonNameElement); // Append the strong tag for the name
+
+                // Event listener for selecting the tracked Pokémon for EV tracking
+                partyItem.addEventListener('click', () => {
+                    selectedTrackedPokemonIndex = index;
+                    saveTrackedPokemon(); // Save the new selected index
+                    renderTrackedPokemonParty(); // Re-render to update active state
+                    updateEvDisplay(); // Update EV display for the newly selected Pokémon
+                    updateStatCalculatorSourceOptions(); // Update options on stat calculator
+                    updateLevelAndNatureInputs(); // Update level and nature inputs
+                    updateIvEstimatorInputs(); // New: Update IV Estimator inputs
+                });
+
+                // Event listener for the "Change" button
+                const changeButton = partyItem.querySelector('.change-pokemon-button');
+                changeButton.addEventListener('click', (event) => {
+                    event.stopPropagation(); // Prevent the parent click event (selecting the pokemon)
+                    showPokemonSelectionModal(index); // Open modal for this specific index
+                });
+
+                trackedPokemonPartyDisplay.appendChild(partyItem);
+            });
+            updateEvDisplay(); // Ensure display is updated after rendering
+            updateLevelAndNatureInputs(); // Ensure level and nature inputs are updated on initial render
+            updateIvEstimatorInputs(); // New: Ensure IV Estimator inputs are updated on initial render
+        }
+
+
+        /**
+         * Updates the displayed EV tally for the selected Pokémon.
+         */
+        function updateEvDisplay() {
+            if (selectedTrackedPokemonIndex !== -1 && trackedPokemon[selectedTrackedPokemonIndex]) {
+                const currentEvs = trackedPokemon[selectedTrackedPokemonIndex].evs;
+                trackedPokemonNameDisplay.textContent = trackedPokemon[selectedTrackedPokemonIndex].customName; // Display custom name
+                currentEvHp.textContent = currentEvs.hp;
+                currentEvAtk.textContent = currentEvs.atk;
+                currentEvDef.textContent = currentEvs.def;
+                currentEvSpAtk.textContent = currentEvs.spatk;
+                currentEvSpDef.textContent = currentEvs.spdef;
+                currentEvSpe.textContent = currentEvs.spe;
+
+                const total = Object.values(currentEvs).reduce((sum, ev) => sum + ev, 0);
+                totalEvsDisplay.textContent = `${total} / 510`;
+
+                // Display error if total EVs exceed 510, only if currently on EV tracker tab
+                if (document.getElementById('ev-tracker').classList.contains('active')) {
+                    if (total > 510) {
+                        showErrorMessage(evTrackerErrorMessageDiv, `Total EVs cannot exceed 510! Current total: ${total}`);
+                    } else {
+                        hideErrorMessage(evTrackerErrorMessageDiv);
+                    }
+                } else {
+                    hideErrorMessage(evTrackerErrorMessageDiv); // Always hide if not on EV tab
+                }
+
+            } else {
+                trackedPokemonNameDisplay.textContent = 'None Selected';
+                currentEvHp.textContent = '0';
+                currentEvAtk.textContent = '0';
+                currentEvDef.textContent = '0';
+                currentEvSpAtk.textContent = '0';
+                currentEvSpDef.textContent = '0';
+                currentEvSpe.textContent = '0';
+                totalEvsDisplay.textContent = '0 / 510';
+                hideErrorMessage(evTrackerErrorMessageDiv); // Always hide if no pokemon selected
+            }
+
+            // Update state of radio buttons on Stat Calculator
+            updateStatCalculatorSourceOptions();
+        }
+
+        /**
+         * Adds EVs from a defeated Pokémon to the current tally of the selected Pokémon.
+         * @param {object} evYield - An object containing the EV yields (e.g., {hp: 1, atk: 2}).
+         */
+        function addEvs(evYield) {
+            if (selectedTrackedPokemonIndex === -1 || !trackedPokemon[selectedTrackedPokemonIndex] || !trackedPokemon[selectedTrackedPokemonIndex].basePokemonId) {
+                showErrorMessage(evTrackerErrorMessageDiv, "Please select and assign a Pokémon to track EVs for.");
+                return;
+            }
+
+            let currentEvs = trackedPokemon[selectedTrackedPokemonIndex].evs;
+            let totalAdded = 0;
+            let exceedsStatCap = false;
+            let exceedsTotalCap = false;
+
+            // Temporarily calculate potential new EVs and check caps
+            const potentialEvs = { ...currentEvs };
+            for (const stat in evYield) {
+                potentialEvs[stat] = (potentialEvs[stat] || 0) + evYield[stat];
+                if (potentialEvs[stat] > 255) {
+                    exceedsStatCap = true;
+                }
+                totalAdded += (evYield[stat] || 0); // Ensure 0 if stat not present
+            }
+
+            const currentTotal = Object.values(currentEvs).reduce((sum, ev) => sum + ev, 0);
+            if (currentTotal + totalAdded > 510) {
+                exceedsTotalCap = true;
+            }
+
+            if (exceedsStatCap) {
+                showErrorMessage(evTrackerErrorMessageDiv, "Adding these EVs would exceed the 255 EV cap for one or more stats!");
+                return; // Do not add EVs if any stat goes over 255
+            }
+
+            if (exceedsTotalCap) {
+                showErrorMessage(evTrackerErrorMessageDiv, `Adding these EVs would exceed the total 510 EV cap! Current total: ${currentTotal}, Adding: ${totalAdded}.`);
+                return; // Do not add EVs if total goes over 510
+            }
+
+            // If all checks pass, apply the EVs
+            for (const stat in evYield) {
+                currentEvs[stat] = (currentEvs[stat] || 0) + evYield[stat];
+            }
+            saveTrackedPokemon();
+            updateEvDisplay();
+            hideErrorMessage(evTrackerErrorMessageDiv); // Clear error if successfully added
+        }
+
+        /**
+         * Logic to reset all tracked EVs to zero for the selected Pokémon.
+         */
+        function resetEvsLogic() {
+            if (selectedTrackedPokemonIndex !== -1 && trackedPokemon[selectedTrackedPokemonIndex]) {
+                trackedPokemon[selectedTrackedPokemonIndex].evs = { hp: 0, atk: 0, def: 0, spatk: 0, spdef: 0, spe: 0 };
+                saveTrackedPokemon();
+                updateEvDisplay();
+                hideErrorMessage(evTrackerErrorMessageDiv);
+            } else {
+                showErrorMessage(evTrackerErrorMessageDiv, "No Pokémon selected to reset EVs for.");
+            }
+        }
+
+        /**
+         * Logic to clear the entire party and revert to placeholders.
+         */
+        function clearPartyLogic() {
+            trackedPokemon = [];
+            for (let i = 1; i <= 6; i++) {
+                trackedPokemon.push({
+                    customName: `My Pokémon ${i}`,
+                    basePokemonId: null,
+                    basePokemonDisplayName: null,
+                    evs: { hp: 0, atk: 0, def: 0, spatk: 0, spdef: 0, spe: 0 },
+                    estimatedIvs: null, // Initialize estimated IVs for new slots
+                    level: 50, // Default level
+                    nature: "Hardy", // Default nature
+                    currentStats: { hp: '', atk: '', def: '', spatk: '', spdef: '', spe: '' }, // Initialize current stats to empty strings
+                    knownEvsForIvEstimator: { hp: 0, atk: 0, def: 0, spatk: 0, spdef: 0, spe: 0 } // Initialize known EVs for IV estimator
+                });
+            }
+            selectedTrackedPokemonIndex = 0; // Select the first placeholder
+            saveTrackedPokemon();
+            renderTrackedPokemonParty();
+            updateEvDisplay();
+            hideErrorMessage(evTrackerErrorMessageDiv);
+            updateLevelAndNatureInputs(); // Update inputs after clearing party
+            updateIvEstimatorInputs(); // New: Update IV Estimator inputs after clearing party
+        }
+
+        /**
+         * Enables/disables manual IV input fields and updates their values based on radio selection.
+         */
+        function toggleIvInputs() {
+            const isManual = document.querySelector('input[name="ivSource"]:checked').value === 'manual';
+            const ivInputs = {
+                hp: ivHpInput, atk: ivAtkInput, def: ivDefInput,
+                spatk: ivSpAtkInput, spdef: ivSpDefInput, spe: ivSpeInput
+            };
+
+            const currentPokemon = trackedPokemon[selectedTrackedPokemonIndex];
+
+            for (const stat in ivInputs) {
+                const input = ivInputs[stat];
+                input.disabled = !isManual;
+                if (!isManual) {
+                    // If using estimated IVs, update the input field with the estimated value for the current Pokémon
+                    if (currentPokemon && currentPokemon.estimatedIvs && currentPokemon.estimatedIvs[stat] !== null) {
+                        input.value = currentPokemon.estimatedIvs[stat];
+                    } else {
+                        input.value = '0'; // Default to 0 if no estimated IVs for this stat
+                    }
+                } else {
+                    // If switching back to manual, revert to the last manual input or default
+                    input.value = lastManualIvs[stat];
+                }
+            }
+        }
+
+        /**
+         * Enables/disables manual EV input fields and updates their values based on radio selection.
+         */
+        function toggleEvInputs() {
+            const isManual = document.querySelector('input[name="evSource"]:checked').value === 'manual';
+            const evInputs = {
+                hp: evHpInput, atk: evAtkInput, def: evDefInput,
+                spatk: evSpAtkInput, spdef: evSpDefInput, spe: evSpeInput
+            };
+
+            const currentPokemon = trackedPokemon[selectedTrackedPokemonIndex];
+
+            for (const stat in evInputs) {
+                const input = evInputs[stat];
+                input.disabled = !isManual;
+                if (!isManual) {
+                    // If using tracked EVs, update the input field with the tracked value for the current Pokémon
+                    if (currentPokemon && currentPokemon.basePokemonId && currentPokemon.evs) {
+                        input.value = currentPokemon.evs[stat];
+                    } else {
+                        input.value = '0'; // Default to 0 if no Pokémon selected or no EVs
+                    }
+                } else {
+                    // If switching back to manual, revert to the last manual input or default
+                    input.value = lastManualEvs[stat];
+                }
+            }
+        }
+
+        /**
+         * Updates the enabled state of "Use Estimated IVs" and "Use Tracked EVs" radio options,
+         * and triggers the input field toggling.
+         */
+        function updateStatCalculatorSourceOptions() {
+            const currentPokemon = trackedPokemon[selectedTrackedPokemonIndex];
+
+            // Update Estimated IVs radio button
+            if (currentPokemon && currentPokemon.estimatedIvs && Object.values(currentPokemon.estimatedIvs).every(val => val !== null)) {
+                radioUseEstimatedIvs.disabled = false;
+            } else {
+                radioUseEstimatedIvs.disabled = true;
+                // If estimated IVs are not available and it's currently selected, switch to manual
+                if (radioUseEstimatedIvs.checked) {
+                    document.querySelector('input[name="ivSource"][value="manual"]').checked = true;
+                }
+            }
+
+            // Update Tracked EVs radio button
+            if (currentPokemon && currentPokemon.basePokemonId) {
+                radioUseTrackedEvs.disabled = false;
+            } else {
+                radioUseTrackedEvs.disabled = true;
+                // If no tracked Pokémon assigned and it's currently selected, switch to manual
+                if (radioUseTrackedEvs.checked) {
+                    document.querySelector('input[name="evSource"][value="manual"]').checked = true;
+                }
+            }
+
+            // Apply toggling for input fields based on current selection
+            toggleIvInputs();
+            toggleEvInputs();
+        }
+
+        /**
+         * Saves the tracked Pokémon data to localStorage.
+         */
+        function saveTrackedPokemon() {
+            try {
+                localStorage.setItem('pokemonEvTrackerData', JSON.stringify(trackedPokemon));
+                localStorage.setItem('pokemonEvTrackerSelectedIndex', selectedTrackedPokemonIndex.toString());
+            } catch (e) {
+                console.error("Failed to save data to localStorage:", e);
+                // Optionally, show a user-friendly message about storage issues
+            }
+        }
+
+        /**
+         * Loads the tracked Pokémon data from localStorage.
+         */
+        function loadTrackedPokemon() {
+            try {
+                const savedData = localStorage.getItem('pokemonEvTrackerData');
+                if (savedData) {
+                    trackedPokemon = JSON.parse(savedData);
+                    // Ensure new properties are added if loading old data structure
+                    trackedPokemon.forEach((pkmn, index) => {
+                        if (pkmn.name && !pkmn.customName) {
+                            pkmn.customName = pkmn.name; // Migrate old 'name' to 'customName'
+                            delete pkmn.name;
+                        }
+                        if (!pkmn.customName) {
+                            pkmn.customName = `My Pokémon ${index + 1}`;
+                        }
+                        if (!pkmn.basePokemonId) {
+                            pkmn.basePokemonId = null;
+                        }
+                        if (!pkmn.basePokemonDisplayName) {
+                            pkmn.basePokemonDisplayName = null;
+                        }
+                        // Initialize estimatedIvs if not present in old data
+                        if (typeof pkmn.estimatedIvs === 'undefined') {
+                            pkmn.estimatedIvs = null;
+                        }
+                        // Initialize level and nature if not present in old data
+                        if (typeof pkmn.level === 'undefined') {
+                            pkmn.level = 50;
+                        }
+                        if (typeof pkmn.nature === 'undefined') {
+                            pkmn.nature = "Hardy";
+                        }
+                        // Initialize currentStats and knownEvsForIvEstimator if not present
+                        if (typeof pkmn.currentStats === 'undefined' || pkmn.currentStats === null) {
+                            pkmn.currentStats = { hp: '', atk: '', def: '', spatk: '', spdef: '', spe: '' };
+                        }
+                        if (typeof pkmn.knownEvsForIvEstimator === 'undefined' || pkmn.knownEvsForIvEstimator === null) {
+                            pkmn.knownEvsForIvEstimator = { hp: 0, atk: 0, def: 0, spatk: 0, spdef: 0, spe: 0 };
+                        }
+                    });
+
+                    while (trackedPokemon.length < 6) {
+                        trackedPokemon.push({
+                            customName: `My Pokémon ${trackedPokemon.length + 1}`,
+                            basePokemonId: null,
+                            basePokemonDisplayName: null,
+                            evs: { hp: 0, atk: 0, def: 0, spatk: 0, spdef: 0, spe: 0 },
+                            estimatedIvs: null,
+                            level: 50,
+                            nature: "Hardy",
+                            currentStats: { hp: '', atk: '', def: '', spatk: '', spdef: '', spe: '' },
+                            knownEvsForIvEstimator: { hp: 0, atk: 0, def: 0, spatk: 0, spdef: 0, spe: 0 }
+                        });
+                    }
+                    if (trackedPokemon.length > 6) {
+                        trackedPokemon = trackedPokemon.slice(0, 6);
+                    }
+                } else {
+                    for (let i = 1; i <= 6; i++) {
+                        trackedPokemon.push({
+                            customName: `My Pokémon ${i}`,
+                            basePokemonId: null,
+                            basePokemonDisplayName: null,
+                            evs: { hp: 0, atk: 0, def: 0, spatk: 0, spdef: 0, spe: 0 },
+                            estimatedIvs: null,
+                            level: 50,
+                            nature: "Hardy",
+                            currentStats: { hp: '', atk: '', def: '', spatk: '', spdef: '', spe: '' },
+                            knownEvsForIvEstimator: { hp: 0, atk: 0, def: 0, spatk: 0, spdef: 0, spe: 0 }
+                        });
+                    }
+                }
+
+                const savedIndex = localStorage.getItem('pokemonEvTrackerSelectedIndex');
+                if (savedIndex !== null && trackedPokemon[parseInt(savedIndex)]) {
+                    selectedTrackedPokemonIndex = parseInt(savedIndex);
+                } else if (trackedPokemon.length > 0) {
+                    selectedTrackedPokemonIndex = 0;
+                } else {
+                    selectedTrackedPokemonIndex = -1;
+                }
+
+            } catch (e) {
+                console.error("Failed to load data from localStorage, resetting:", e);
+                trackedPokemon = [];
+                for (let i = 1; i <= 6; i++) {
+                    trackedPokemon.push({
+                        customName: `My Pokémon ${i}`,
+                        basePokemonId: null,
+                        basePokemonDisplayName: null,
+                        evs: { hp: 0, atk: 0, def: 0, spatk: 0, spdef: 0, spe: 0 },
+                        estimatedIvs: null,
+                        level: 50,
+                        nature: "Hardy",
+                        currentStats: { hp: '', atk: '', def: '', spatk: '', spdef: '', spe: '' },
+                        knownEvsForIvEstimator: { hp: 0, atk: 0, def: 0, spatk: 0, spdef: 0, spe: 0 }
+                    });
+                }
+                selectedTrackedPokemonIndex = 0;
+            }
+        }
+
+        /**
+         * Populates the modal with Kanto Pokémon for selection.
+         */
+        function populateModalPokemonGrid() {
+            modalPokemonGrid.innerHTML = '';
+            KANTO_POKEMON.forEach(pokemon => {
+                const formattedName = formatPokemonNameForSprite(pokemon.name);
+                const spriteUrl = `https://play.pokemonshowdown.com/sprites/gen3/${formattedName}.png`;
+
+                const pokemonItem = document.createElement('div');
+                pokemonItem.classList.add('modal-pokemon-item');
+                pokemonItem.innerHTML = `
+                    <img src="${spriteUrl}" alt="${pokemon.name} sprite" onerror="this.onerror=null;this.src='https://placehold.co/50x50/cccccc/000000?text=N/A';" />
+                    <span>${pokemon.name}</span>
+                `;
+                pokemonItem.addEventListener('click', () => selectPokemonForTrackedSlot(formattedName, pokemon.name));
+                modalPokemonGrid.appendChild(pokemonItem);
+            });
+        }
+
+        /**
+         * Shows the Pokémon selection modal.
+         * @param {number} index - The index of the tracked Pokémon slot to update.
+         */
+        function showPokemonSelectionModal(index) {
+            currentModalTargetIndex = index;
+            populateModalPokemonGrid(); // Ensure grid is fresh
+            pokemonSelectionModal.classList.remove('hidden');
+        }
+
+        /**
+         * Hides the Pokémon selection modal.
+         */
+        function hidePokemonSelectionModal() {
+            pokemonSelectionModal.classList.add('hidden');
+            currentModalTargetIndex = -1; // Reset target index
+        }
+
+        /**
+         * Selects a Pokémon from the modal and assigns it to the target tracked slot.
+         * @param {string} pokemonId - The formatted ID of the selected Pokémon (for sprite URL).
+         * @param {string} pokemonDisplayName - The display name of the selected Pokémon.
+         */
+        function selectPokemonForTrackedSlot(pokemonId, pokemonDisplayName) {
+            if (currentModalTargetIndex !== -1 && trackedPokemon[currentModalTargetIndex]) {
+                trackedPokemon[currentModalTargetIndex].basePokemonId = pokemonId;
+                trackedPokemon[currentModalTargetIndex].basePokemonDisplayName = pokemonDisplayName;
+                // Always update the custom name to the base name when a new Pokémon is selected
+                trackedPokemon[currentModalTargetIndex].customName = pokemonDisplayName;
+                // Clear estimated IVs when a new Pokémon is assigned to a slot
+                trackedPokemon[currentModalTargetIndex].estimatedIvs = null;
+
+                // If level/nature are not yet set for this new Pokémon, or if they were default,
+                // ensure they are initialized or kept as they are.
+                if (typeof trackedPokemon[currentModalTargetIndex].level === 'undefined' || trackedPokemon[currentModalTargetIndex].level === null) {
+                    trackedPokemon[currentModalTargetIndex].level = 50;
+                }
+                if (typeof trackedPokemon[currentModalTargetIndex].nature === 'undefined' || trackedPokemon[currentModalTargetIndex].nature === null) {
+                    trackedPokemon[currentModalTargetIndex].nature = "Hardy";
+                }
+                // Initialize currentStats and knownEvsForIvEstimator for the new Pokémon
+                trackedPokemon[currentModalTargetIndex].currentStats = { hp: '', atk: '', def: '', spatk: '', spdef: '', spe: '' };
+                trackedPokemon[currentModalTargetIndex].knownEvsForIvEstimator = { hp: 0, atk: 0, def: 0, spatk: 0, spdef: 0, spe: 0 };
+
+
+                saveTrackedPokemon();
+                renderTrackedPokemonParty();
+                updateEvDisplay();
+                updateStatCalculatorSourceOptions(); // Update options after changing Pokémon
+                updateLevelAndNatureInputs(); // Update level and nature inputs
+                updateIvEstimatorInputs(); // New: Update IV Estimator inputs
+            }
+            hidePokemonSelectionModal();
+        }
+
+        /**
+         * Shows the generic confirmation modal.
+         * @param {string} title - The title for the confirmation modal.
+         * @param {string} message - The message to display in the confirmation modal.
+         * @param {function} onConfirmCallback - The function to call if 'Yes' is clicked.
+         */
+        function showConfirmationModal(title, message, onConfirmCallback) {
+            confirmModalTitle.textContent = title;
+            confirmModalMessage.textContent = message;
+            currentConfirmAction = onConfirmCallback; // Store the callback
+            confirmationModal.classList.remove('hidden');
+        }
+
+        /**
+         * Hides the generic confirmation modal.
+         */
+        function hideConfirmationModal() {
+            confirmationModal.classList.add('hidden');
+            currentConfirmAction = null; // Clear the callback
+        }
+
+        /**
+         * Updates the level and nature input fields based on the currently selected Pokémon.
+         */
+        function updateLevelAndNatureInputs() {
+            if (selectedTrackedPokemonIndex !== -1 && trackedPokemon[selectedTrackedPokemonIndex]) {
+                const currentPokemon = trackedPokemon[selectedTrackedPokemonIndex];
+                levelInput.value = currentPokemon.level;
+                ivCalcLevelInput.value = currentPokemon.level;
+                natureSelect.value = currentPokemon.nature;
+                ivCalcNatureSelect.value = currentPokemon.nature;
+            } else {
+                // If no Pokémon is selected, revert to default values
+                levelInput.value = 50;
+                ivCalcLevelInput.value = 50;
+                natureSelect.value = "Hardy";
+                ivCalcNatureSelect.value = "Hardy";
+            }
+        }
+
+        /**
+         * Updates the IV Estimator's "Current Stats" and "Known EVs" input fields
+         * based on the currently selected Pokémon's stored data.
+         */
+        function updateIvEstimatorInputs() {
+            if (selectedTrackedPokemonIndex !== -1 && trackedPokemon[selectedTrackedPokemonIndex]) {
+                const currentPokemon = trackedPokemon[selectedTrackedPokemonIndex];
+                const currentStats = currentPokemon.currentStats;
+                const knownEvs = currentPokemon.knownEvsForIvEstimator;
+
+                ivCalcHpInput.value = currentStats.hp !== '' ? currentStats.hp : '';
+                ivCalcAtkInput.value = currentStats.atk !== '' ? currentStats.atk : '';
+                ivCalcDefInput.value = currentStats.def !== '' ? currentStats.def : '';
+                ivCalcSpAtkInput.value = currentStats.spatk !== '' ? currentStats.spatk : '';
+                ivCalcSpDefInput.value = currentStats.spdef !== '' ? currentStats.spdef : '';
+                ivCalcSpeInput.value = currentStats.spe !== '' ? currentStats.spe : '';
+
+                ivCalcEvHpInput.value = knownEvs.hp;
+                ivCalcEvAtkInput.value = knownEvs.atk;
+                ivCalcEvDefInput.value = knownEvs.def;
+                ivCalcEvSpAtkInput.value = knownEvs.spatk;
+                ivCalcEvSpDefInput.value = knownEvs.spdef;
+                ivCalcEvSpeInput.value = knownEvs.spe;
+            } else {
+                // If no Pokémon is selected, clear the inputs
+                ivCalcHpInput.value = '';
+                ivCalcAtkInput.value = '';
+                ivCalcDefInput.value = '';
+                ivCalcSpAtkInput.value = '';
+                ivCalcSpDefInput.value = '';
+                ivCalcSpeInput.value = '';
+
+                ivCalcEvHpInput.value = 0;
+                ivCalcEvAtkInput.value = 0;
+                ivCalcEvDefInput.value = 0;
+                ivCalcEvSpAtkInput.value = 0;
+                ivCalcEvSpDefInput.value = 0;
+                ivCalcEvSpeInput.value = 0;
+            }
+            // Hide any previous IV estimator results when inputs are updated
+            ivResultsSection.classList.add('hidden');
+            hideErrorMessage(ivEstimatorErrorMessageDiv);
+        }
+
+
+        // Initialize dropdowns and attach event listeners
+        window.onload = function() {
+            populateNatureDropdown(natureSelect);
+            populateNatureDropdown(ivCalcNatureSelect); // Populate for IV Estimator
+            populateEvPokemonGrid(); // Populate the EV grid
+
+            loadTrackedPokemon(); // Load tracked Pokémon data
+            renderTrackedPokemonParty(); // Render the tracked Pokémon party
+
+            calculateBtn.addEventListener('click', handleStatCalculate);
+            
+            // Use custom confirmation modal for Reset EVs
+            resetEvsBtn.addEventListener('click', () => {
+                if (selectedTrackedPokemonIndex !== -1 && trackedPokemon[selectedTrackedPokemonIndex] && trackedPokemon[selectedTrackedPokemonIndex].basePokemonId) {
+                    showConfirmationModal(
+                        "Reset EVs",
+                        `Are you sure you want to reset all EVs for "${trackedPokemon[selectedTrackedPokemonIndex].customName}"?`,
+                        resetEvsLogic
+                    );
+                } else {
+                    showErrorMessage(evTrackerErrorMessageDiv, "No Pokémon selected or assigned to reset EVs for.");
+                }
+            });
+
+            // Use custom confirmation modal for Clear Party
+            clearPartyBtn.addEventListener('click', () => {
+                showConfirmationModal(
+                    "Clear All Pokémon Party Slots",
+                    "Are you sure you want to clear all Pokémon from your party and reset their EVs?",
+                    clearPartyLogic
+                );
+            });
+
+            calculateIvBtn.addEventListener('click', handleIvEstimate);
+            
+            // Event listeners for the generic confirmation modal buttons
+            confirmYesBtn.addEventListener('click', () => {
+                if (currentConfirmAction) {
+                    currentConfirmAction();
+                }
+                hideConfirmationModal();
+            });
+            confirmNoBtn.addEventListener('click', hideConfirmationModal);
+            confirmationModal.addEventListener('click', (event) => {
+                if (event.target === confirmationModal) {
+                    hideConfirmationModal();
+                }
+            });
+
+
+            closeModalBtn.addEventListener('click', hidePokemonSelectionModal);
+            pokemonSelectionModal.addEventListener('click', (event) => {
+                // Close modal if clicking outside the content
+                if (event.target === pokemonSelectionModal) {
+                    hidePokemonSelectionModal();
+                }
+            });
+
+
+            // Add event listeners for IV source radio buttons
+            ivSourceRadios.forEach(radio => {
+                radio.addEventListener('change', toggleIvInputs);
+            });
+
+            // Add event listeners for EV source radio buttons
+            evSourceRadios.forEach(radio => {
+                radio.addEventListener('change', toggleEvInputs);
+            });
+
+            // Save manual inputs when they change
+            const manualIvInputs = ivInputsContainer.querySelectorAll('input[type="number"]');
+            manualIvInputs.forEach(input => {
+                input.addEventListener('change', (event) => {
+                    lastManualIvs[input.id.replace('iv', '').toLowerCase()] = parseInt(event.target.value);
+                });
+            });
+
+            const manualEvInputs = evInputsContainer.querySelectorAll('input[type="number"]');
+            manualEvInputs.forEach(input => {
+                input.addEventListener('change', (event) => {
+                    lastManualEvs[input.id.replace('ev', '').toLowerCase()] = parseInt(event.target.value);
+                });
+            });
+
+            // Synchronize Level and Nature with selected Pokémon
+            levelInput.addEventListener('input', (event) => {
+                if (selectedTrackedPokemonIndex !== -1 && trackedPokemon[selectedTrackedPokemonIndex]) {
+                    trackedPokemon[selectedTrackedPokemonIndex].level = parseInt(event.target.value);
+                    saveTrackedPokemon();
+                    ivCalcLevelInput.value = event.target.value; // Keep the other input in sync visually
+                }
+            });
+
+            ivCalcLevelInput.addEventListener('input', (event) => {
+                if (selectedTrackedPokemonIndex !== -1 && trackedPokemon[selectedTrackedPokemonIndex]) {
+                    trackedPokemon[selectedTrackedPokemonIndex].level = parseInt(event.target.value);
+                    saveTrackedPokemon();
+                    levelInput.value = event.target.value; // Keep the other input in sync visually
+                }
+            });
+
+            natureSelect.addEventListener('change', (event) => {
+                if (selectedTrackedPokemonIndex !== -1 && trackedPokemon[selectedTrackedPokemonIndex]) {
+                    trackedPokemon[selectedTrackedPokemonIndex].nature = event.target.value;
+                    saveTrackedPokemon();
+                    ivCalcNatureSelect.value = event.target.value; // Keep the other input in sync visually
+                }
+            });
+
+            ivCalcNatureSelect.addEventListener('change', (event) => {
+                if (selectedTrackedPokemonIndex !== -1 && trackedPokemon[selectedTrackedPokemonIndex]) {
+                    trackedPokemon[selectedTrackedPokemonIndex].nature = event.target.value;
+                    saveTrackedPokemon();
+                    natureSelect.value = event.target.value; // Keep the other input in sync visually
+                }
+            });
+
+            // New: Save IV Estimator current stats and known EVs when they change
+            const ivCalcStatInputs = [ivCalcHpInput, ivCalcAtkInput, ivCalcDefInput, ivCalcSpAtkInput, ivCalcSpDefInput, ivCalcSpeInput];
+            ivCalcStatInputs.forEach(input => {
+                input.addEventListener('input', (event) => {
+                    if (selectedTrackedPokemonIndex !== -1 && trackedPokemon[selectedTrackedPokemonIndex]) {
+                        const statName = input.id.replace('ivCalc', '').toLowerCase();
+                        trackedPokemon[selectedTrackedPokemonIndex].currentStats[statName] = event.target.value;
+                        saveTrackedPokemon();
+                    }
+                });
+            });
+
+            const ivCalcEvInputs = [ivCalcEvHpInput, ivCalcEvAtkInput, ivCalcEvDefInput, ivCalcEvSpAtkInput, ivCalcEvSpDefInput, ivCalcEvSpeInput];
+            ivCalcEvInputs.forEach(input => {
+                input.addEventListener('input', (event) => {
+                    if (selectedTrackedPokemonIndex !== -1 && trackedPokemon[selectedTrackedPokemonIndex]) {
+                        const statName = input.id.replace('ivCalcEv', '').toLowerCase();
+                        trackedPokemon[selectedTrackedPokemonIndex].knownEvsForIvEstimator[statName] = parseInt(event.target.value) || 0;
+                        saveTrackedPokemon();
+                    }
+                });
+            });
+
+
+            // Add event listeners for tab switching
+            tabButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    switchTab(button.dataset.tab);
+                });
+            });
+
+            // Initially show the Stat Calculator tab and update all relevant displays
+            switchTab('stat-calculator');
+            updateEvDisplay();
+            updateLevelAndNatureInputs();
+            updateIvEstimatorInputs(); // Ensure IV Estimator inputs are set correctly on first load
+        };
+    </script>
+</body>
+</html>
