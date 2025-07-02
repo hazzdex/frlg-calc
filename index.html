@@ -4,6 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pokémon Gen 3 Kanto Stat Calculator</title>
+
+    <!-- Apple Touch Icon and Web App Meta Tags for iOS Home Screen -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="FRLG PokeCalc"> <!-- Updated title -->
+    <link rel="apple-touch-icon" href="https://play.pokemonshowdown.com/sprites/itemicons/pokeball.png"> <!-- Updated icon to Pokeball -->
+
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -1113,7 +1120,7 @@
         const confirmModalMessage = document.getElementById('confirmModalMessage');
         const confirmYesBtn = document.getElementById('confirmYesBtn');
         const confirmNoBtn = document.getElementById('confirmNoBtn');
-
+        
         // Global state for estimated IVs and tracked EVs
         let trackedPokemon = []; // Each item: { customName: "My Pokémon", basePokemonId: "bulbasaur", basePokemonDisplayName: "Bulbasaur", evs: { hp: 0, atk: 0, ... }, estimatedIvs: null, level: 50, nature: "Hardy", currentStats: { hp: '', atk: '', ... }, knownEvsForIvEstimator: { hp: 0, atk: 0, ... } }
         let selectedTrackedPokemonIndex = -1; // Index of the currently selected Pokémon in `trackedPokemon`
@@ -1348,7 +1355,7 @@
             // Calculate other stats
             const calculatedAtk = calculateStat(selectedPokemon.baseStats.atk, ivsToUse.atk, evsToUse.atk, level, natureModifiers.atk);
             const calculatedDef = calculateStat(selectedPokemon.baseStats.def, ivsToUse.def, evsToUse.def, level, natureModifiers.def);
-            const calculatedSpAtk = calculateStat(selectedPokemon.baseStats.spatk, ivsToToUse.spatk, evsToUse.spatk, level, natureModifiers.spatk);
+            const calculatedSpAtk = calculateStat(selectedPokemon.baseStats.spatk, ivsToUse.spatk, evsToUse.spatk, level, natureModifiers.spatk);
             const calculatedSpDef = calculateStat(selectedPokemon.baseStats.spdef, ivsToUse.spdef, evsToUse.spdef, level, natureModifiers.spdef);
             const calculatedSpe = calculateStat(selectedPokemon.baseStats.spe, ivsToUse.spe, evsToUse.spe, level, natureModifiers.spe);
 
@@ -1999,6 +2006,11 @@
         function populateModalPokemonGrid() {
             modalPokemonGrid.innerHTML = '';
             KANTO_POKEMON.forEach(pokemon => {
+                const evYieldString = Object.entries(pokemon.evYield)
+                    .map(([stat, value]) => `${value} ${stat.toUpperCase()}`)
+                    .join(', ');
+
+                // Construct sprite URL using Pokémon Showdown's Gen 3 static sprites
                 const formattedName = formatPokemonNameForSprite(pokemon.name);
                 const spriteUrl = `https://play.pokemonshowdown.com/sprites/gen3/${formattedName}.png`;
 
@@ -2068,6 +2080,29 @@
             hidePokemonSelectionModal();
         }
 
+        // Event handler for the 'Yes' button in the confirmation modal
+        const handleConfirmYes = () => {
+            console.log("Confirm Yes clicked.");
+            if (currentConfirmAction) {
+                currentConfirmAction();
+            }
+            hideConfirmationModal();
+        };
+
+        // Event handler for the 'No' button in the confirmation modal
+        const handleConfirmNo = () => {
+            console.log("Confirm No clicked.");
+            hideConfirmationModal();
+        };
+
+        // Event handler for clicking outside the confirmation modal content
+        const handleConfirmationOverlayClick = (event) => {
+            if (event.target === confirmationModal) {
+                console.log("Confirmation modal overlay clicked.");
+                hideConfirmationModal();
+            }
+        };
+
         /**
          * Shows the generic confirmation modal.
          * @param {string} title - The title for the confirmation modal.
@@ -2075,18 +2110,32 @@
          * @param {function} onConfirmCallback - The function to call if 'Yes' is clicked.
          */
         function showConfirmationModal(title, message, onConfirmCallback) {
+            console.log("Showing confirmation modal:", title);
             confirmModalTitle.textContent = title;
             confirmModalMessage.textContent = message;
             currentConfirmAction = onConfirmCallback; // Store the callback
             confirmationModal.classList.remove('hidden');
+
+            // Attach listeners when modal is shown
+            confirmYesBtn.addEventListener('click', handleConfirmYes);
+            confirmNoBtn.addEventListener('click', handleConfirmNo);
+            confirmationModal.addEventListener('click', handleConfirmationOverlayClick);
+            console.log("Confirmation modal listeners attached.");
         }
 
         /**
          * Hides the generic confirmation modal.
          */
         function hideConfirmationModal() {
+            console.log("Hiding confirmation modal.");
             confirmationModal.classList.add('hidden');
             currentConfirmAction = null; // Clear the callback
+
+            // Remove listeners when modal is hidden to prevent memory leaks and duplicate attachments
+            confirmYesBtn.removeEventListener('click', handleConfirmYes);
+            confirmNoBtn.removeEventListener('click', handleConfirmNo);
+            confirmationModal.removeEventListener('click', handleConfirmationOverlayClick);
+            console.log("Confirmation modal listeners removed.");
         }
 
         /**
@@ -2188,19 +2237,10 @@
 
             calculateIvBtn.addEventListener('click', handleIvEstimate);
             
-            // Event listeners for the generic confirmation modal buttons
-            confirmYesBtn.addEventListener('click', () => {
-                if (currentConfirmAction) {
-                    currentConfirmAction();
-                }
-                hideConfirmationModal();
-            });
-            confirmNoBtn.addEventListener('click', hideConfirmationModal);
-            confirmationModal.addEventListener('click', (event) => {
-                if (event.target === confirmationModal) {
-                    hideConfirmationModal();
-                }
-            });
+            // Event listeners for the generic confirmation modal buttons are now handled inside showConfirmationModal/hideConfirmationModal
+            // confirmYesBtn.addEventListener('click', handleConfirmYes); // Removed
+            // confirmNoBtn.addEventListener('click', handleConfirmNo);   // Removed
+            // confirmationModal.addEventListener('click', handleConfirmationOverlayClick); // Removed
 
 
             closeModalBtn.addEventListener('click', hidePokemonSelectionModal);
@@ -2233,7 +2273,7 @@
             const manualEvInputs = evInputsContainer.querySelectorAll('input[type="number"]');
             manualEvInputs.forEach(input => {
                 input.addEventListener('change', (event) => {
-                    lastManualEvs[input.id.replace('ev', '').toLowerCase()] = parseInt(event.target.value);
+                    lastManualEvs[input.id.replace('ev', '').toLowerCase()] = parseInt(event.target.value) || 0; // Ensure 0 if empty
                 });
             });
 
